@@ -9,7 +9,7 @@ Tiered Mistlands wisp torches and demister lamps with expanded mist clearance, i
 
 ## The Problem
 
-In vanilla Valheim, clearing the thick mist of the Mistlands requires placing dozens of small, fragile native wisp torches in close proximity. This creates:
+In native Valheim, clearing the thick mist of the Mistlands requires placing dozens of small, fragile native wisp torches in close proximity. This creates:
 
 - **Severe Visual Clutter & Construction Fatigue**: Expansive Mistlands bases, farms, and transit paths quickly devolve into chaotic thickets of sticks.
 - **Performance Overhead**: Dozens of overlapping particle system force fields, dynamic point lights, and particle emitters ticking simultaneously cause noticeable framerate drops.
@@ -22,7 +22,7 @@ In vanilla Valheim, clearing the thick mist of the Mistlands requires placing do
 
 **WispTorchHeeler** introduces four tiered, late-game Mistlands lighting installations with progressively larger mist-clearance radii alongside an interactive, crosshair-driven "Torch Painter" system and multiplayer color synchronization via Valheim's native Zero Data Object (ZDO) architecture:
 
-- **Tiered Mist Clearance**: Four distinct lighting fixtures ranging from reinforced large torches to colossal dwarven monuments, clearing up to **3.0×** the fog radius (9× coverage area) to drastically reduce piece density and visual clutter.
+- **Tiered Mist Clearance**: Four distinct lighting fixtures ranging from reinforced large torches to colossal dwarven monuments, clearing up to **3.75×** the fog radius (~14× coverage area) to drastically reduce piece density and visual clutter.
 - **Interactive Torch Painter**: Aim at any placed torch or lamp and press **`P`** to instantly paint its light and particle effects with your chosen color, or **`LeftShift + P`** to reset it.
 - **Auto-Paint on Placement**: Newly placed torches and lamps can automatically inherit your active painter color the instant you build them.
 - **Multiplayer & Server-Synchronized**: Stamped directly into each piece's `ZDO` at creation with zero desync. Unpainted pieces can inherit client-chosen defaults or server-enforced color themes, with ward-protection permissions and admin overrides.
@@ -36,32 +36,36 @@ In vanilla Valheim, clearing the thick mist of the Mistlands requires placing do
 
 1. **Tier 1 — Large Wisp Torch (`piece_wisptorch_heeler_lg`)**:
    - Cloned from the native wooden wisp torch and scaled physically by **`1.25x`**.
-   - **Mist Clearance**: Clears **1.5×** the fog radius (9m radius, ~2.25× coverage area).
-   - **Light**: **1.33×** intensity and **1.25×** range.
-   - **Durability**: **200 HP** (double native torch) and immune to weather decay.
+   - **Mist Clearance**: **1.50×** radius (relative to 24.0m baseline: **36.0m** radius, ~2.25× coverage area).
+   - **Light**: **1.33×** intensity and **1.25×** range (**12.5m** light radius).
+   - **PlayerBase**: **20.0m** base spawn suppression (scales with `PlayerBaseMistRadiusBonus`).
+   - **Durability**: **200 HP** and immune to weather decay.
    - **Crafting**: Placed freeform with the building hammer (`Wisp:8,YggdrasilWood:5,Sap:1`).
 
 2. **Tier 2 — Small Lamp (`piece_wisplamp_heeler`)**:
    - In-game Name: *Dvergr Wisp Lamp*
    - Adapts the native Dvergr Demister prop at natural **`1.0x`** scale.
-   - **Mist Clearance**: Clears **2.0×** the fog radius (12m radius, 4× coverage area).
-   - **Light**: **1.5×** intensity and **1.5×** range.
+   - **Mist Clearance**: **2.25×** radius (relative to 24.0m baseline: **54.0m** radius, ~5.0× coverage area).
+   - **Light**: **1.50×** intensity and **1.50×** range (**15.0m** light radius).
+   - **PlayerBase**: **20.0m** base spawn suppression (scales with `PlayerBaseMistRadiusBonus`).
    - **Durability**: **250 HP** and immune to weather decay.
    - **Crafting**: Requires a **Forge** (`Wisp:15,Copper:5,Iron:2,BlackMarble:2,Sap:2`).
 
 3. **Tier 3 — Large Lamp (`piece_wisplamp_heeler_lg`)**:
    - In-game Name: *Large Dvergr Wisp Lamp*
    - Cloned from the large Dvergr demister model and scaled up by **`1.1x`**.
-   - **Mist Clearance**: Clears **2.5×** the fog radius (15m radius, ~6.25× coverage area).
-   - **Light**: **2.25×** intensity and **1.75×** range.
+   - **Mist Clearance**: **3.00×** radius (relative to 24.0m baseline: **72.0m** radius, 9.0× coverage area).
+   - **Light**: **2.25×** intensity and **1.75×** range (**17.5m** light radius).
+   - **PlayerBase**: **20.0m** base spawn suppression (scales with `PlayerBaseMistRadiusBonus`).
    - **Durability**: **500 HP** and immune to weather decay.
    - **Crafting**: Requires a **Black Forge** (`Wisp:22,Copper:8,Iron:3,Eitr:2,BlackMarble:5`).
 
 4. **Tier 4 — Grand Lamp (`piece_wisplamp_heeler_grand`)**:
    - In-game Name: *Grand Dvergr Wisp Lamp*
    - Cloned from the large Dvergr demister model and scaled up by **`1.5x`**.
-   - **Mist Clearance**: Clears **3.0×** the fog radius (18m radius, 9× coverage area).
-   - **Light**: Tuned **2.5×** intensity and **2.0×** range.
+   - **Mist Clearance**: **3.75×** radius (relative to 24.0m baseline: **90.0m** radius, ~14.0× coverage area).
+   - **Light**: Tuned **2.50×** intensity and **2.00×** range (**20.0m** light radius).
+   - **PlayerBase**: **20.0m** base spawn suppression (scales with `PlayerBaseMistRadiusBonus`).
    - **Durability**: Colossal **750 HP** and immune to weather decay.
    - **Crafting**: Requires a **Black Forge** (`Wisp:30,Copper:10,Iron:4,Eitr:4,BlackMarble:10`).
 
@@ -85,27 +89,28 @@ Settings can be customized directly in-game using the BepInEx **Configuration Ma
 | :--- | :--- | :--- | :--- | :--- |
 | `1 - General` | `EnableMod (Requires Restart)` | `bool` | `true` | Master switch to enable or disable the functionality of this mod. (Requires Restart) |
 | `1 - General` | `AffectNativeMistTorches` | `bool` | `true` | Allows painting and color defaults on standard native wisp torches. |
-| `2 - Large Torch` | `Torch_MistClearRangeMultiplier` | `float` | `1.5` | Large torch mist clearance force field radius multiplier (1.0 - 10.0). |
-| `2 - Large Torch` | `Torch_LightIntensityMultiplier` | `float` | `1.33` | Large torch light emission intensity multiplier (0.5 - 5.0). |
-| `2 - Large Torch` | `Torch_LightRangeMultiplier` | `float` | `1.25` | Large torch light emission range radius multiplier (0.5 - 5.0). |
-| `2 - Large Torch` | `Torch_Health` | `float` | `200.0` | Large torch structural health points (1.0 - 5000.0, double native torch). |
+| `1 - General` | `PlayerBaseMistRadiusBonus` | `float` | `0.0` | Additive bonus percentage (0.0 to 1.0) scaling PlayerBase spawn suppression from a baseline of 20.0m toward active mist clearance radius. At 0.0, all custom pieces use the 20.0m baseline. At 1.0, the suppression radius matches the active mist reveal boundary. |
+| `2 - Large Torch` | `Torch_MistClearRangeMultiplier` | `float` | `1.5` | Large torch mist clearance radius multiplier (relative to 24.0m baseline, range: 1.0 - 10.0). |
+| `2 - Large Torch` | `Torch_LightIntensityMultiplier` | `float` | `1.33` | Large torch light emission intensity multiplier (relative to 1.0 baseline, range: 0.5 - 5.0). |
+| `2 - Large Torch` | `Torch_LightRangeMultiplier` | `float` | `1.25` | Large torch light emission range radius multiplier (relative to 10.0m baseline, range: 0.5 - 5.0). |
+| `2 - Large Torch` | `Torch_Health` | `float` | `200.0` | Large torch structural health points (1.0 - 5000.0). |
 | `2 - Large Torch` | `Torch_CraftingStation` | `string` | `""` | Required station formatted as StationPrefab (e.g. piece_workbench, piece_forge, or `""` for freeform hammer placement). |
 | `2 - Large Torch` | `Torch_Recipe` | `string` | `Wisp:8,YggdrasilWood:5,Sap:1` | Crafting recipe string formatted as ItemPrefab:Amount,... parsed against ObjectDB. |
-| `3 - Small Lamp` | `SmallLamp_MistClearRangeMultiplier` | `float` | `2.0` | Tier 2 small lamp mist clearance radius multiplier (1.0 - 10.0). |
-| `3 - Small Lamp` | `SmallLamp_LightIntensityMultiplier` | `float` | `1.5` | Tier 2 small lamp light emission intensity multiplier (0.5 - 5.0). |
-| `3 - Small Lamp` | `SmallLamp_LightRangeMultiplier` | `float` | `1.5` | Tier 2 small lamp light emission range radius multiplier (0.5 - 5.0). |
+| `3 - Small Lamp` | `SmallLamp_MistClearRangeMultiplier` | `float` | `2.25` | Tier 2 small lamp mist clearance radius multiplier (relative to 24.0m baseline, range: 1.0 - 10.0). |
+| `3 - Small Lamp` | `SmallLamp_LightIntensityMultiplier` | `float` | `1.5` | Tier 2 small lamp light emission intensity multiplier (relative to 1.0 baseline, range: 0.5 - 5.0). |
+| `3 - Small Lamp` | `SmallLamp_LightRangeMultiplier` | `float` | `1.5` | Tier 2 small lamp light emission range radius multiplier (relative to 10.0m baseline, range: 0.5 - 5.0). |
 | `3 - Small Lamp` | `SmallLamp_Health` | `float` | `250.0` | Tier 2 small lamp structural health points (1.0 - 5000.0). |
 | `3 - Small Lamp` | `SmallLamp_CraftingStation` | `string` | `forge` | Required station formatted as StationPrefab or Jotunn name (defaults to 'forge'). |
 | `3 - Small Lamp` | `SmallLamp_Recipe` | `string` | `Wisp:15,Copper:5,Iron:2,BlackMarble:2,Sap:2` | Crafting recipe string formatted as ItemPrefab:Amount,... parsed against ObjectDB. |
-| `4 - Large Lamp` | `LargeLamp_MistClearRangeMultiplier` | `float` | `2.5` | Tier 3 lamp mist clearance radius multiplier (1.0 - 15.0). |
-| `4 - Large Lamp` | `LargeLamp_LightIntensityMultiplier` | `float` | `2.25` | Tier 3 lamp light emission intensity multiplier (0.5 - 8.0). |
-| `4 - Large Lamp` | `LargeLamp_LightRangeMultiplier` | `float` | `1.75` | Tier 3 lamp light emission range radius multiplier (0.5 - 5.0). |
+| `4 - Large Lamp` | `LargeLamp_MistClearRangeMultiplier` | `float` | `3.0` | Tier 3 lamp mist clearance radius multiplier (relative to 24.0m baseline, range: 1.0 - 15.0). |
+| `4 - Large Lamp` | `LargeLamp_LightIntensityMultiplier` | `float` | `2.25` | Tier 3 lamp light emission intensity multiplier (relative to 1.0 baseline, range: 0.5 - 8.0). |
+| `4 - Large Lamp` | `LargeLamp_LightRangeMultiplier` | `float` | `1.75` | Tier 3 lamp light emission range radius multiplier (relative to 10.0m baseline, range: 0.5 - 5.0). |
 | `4 - Large Lamp` | `LargeLamp_Health` | `float` | `500.0` | Tier 3 lamp structural health points (1.0 - 5000.0). |
 | `4 - Large Lamp` | `LargeLamp_CraftingStation` | `string` | `blackforge` | Required station formatted as StationPrefab or Jotunn name (defaults to 'blackforge'). |
 | `4 - Large Lamp` | `LargeLamp_Recipe` | `string` | `Wisp:22,Copper:8,Iron:3,Eitr:2,BlackMarble:5` | Crafting recipe string formatted as ItemPrefab:Amount,... parsed against ObjectDB. |
-| `5 - Grand Lamp` | `GrandLamp_MistClearRangeMultiplier` | `float` | `3.0` | Tier 4 grand lamp mist clearance radius multiplier (1.0 - 15.0). |
-| `5 - Grand Lamp` | `GrandLamp_LightIntensityMultiplier` | `float` | `2.5` | Tier 4 grand lamp light emission intensity multiplier (0.5 - 8.0). |
-| `5 - Grand Lamp` | `GrandLamp_LightRangeMultiplier` | `float` | `2.0` | Tier 4 grand lamp light emission range radius multiplier (0.5 - 8.0). |
+| `5 - Grand Lamp` | `GrandLamp_MistClearRangeMultiplier` | `float` | `3.75` | Tier 4 grand lamp mist clearance radius multiplier (relative to 24.0m baseline, range: 1.0 - 15.0). |
+| `5 - Grand Lamp` | `GrandLamp_LightIntensityMultiplier` | `float` | `2.5` | Tier 4 grand lamp light emission intensity multiplier (relative to 1.0 baseline, range: 0.5 - 8.0). |
+| `5 - Grand Lamp` | `GrandLamp_LightRangeMultiplier` | `float` | `2.0` | Tier 4 grand lamp light emission range radius multiplier (relative to 10.0m baseline, range: 0.5 - 8.0). |
 | `5 - Grand Lamp` | `GrandLamp_Health` | `float` | `750.0` | Tier 4 grand lamp structural health points (1.0 - 5000.0). |
 | `5 - Grand Lamp` | `GrandLamp_CraftingStation` | `string` | `blackforge` | Required station formatted as StationPrefab or Jotunn name (defaults to 'blackforge'). |
 | `5 - Grand Lamp` | `GrandLamp_Recipe` | `string` | `Wisp:30,Copper:10,Iron:4,Eitr:4,BlackMarble:10` | Crafting recipe string formatted as ItemPrefab:Amount,... parsed against ObjectDB. |
@@ -130,7 +135,7 @@ Settings can be customized directly in-game using the BepInEx **Configuration Ma
 ## Compatibility
 
 - **Dedicated Servers**: Fully compatible with dedicated servers and singleplayer worlds. Server-synced balance and policy settings are enforced on connecting clients via `ConditionalConfigSync`.
-- **Vanilla Wisp Torches**: Works with native Mistlands wisp torches (`piece_wisptorch`) when `AffectNativeMistTorches` is enabled.
+- **Native Wisp Torches**: Works with native Mistlands wisp torches (`piece_wisptorch`) when `AffectNativeMistTorches` is enabled.
 - **Ward Protection**: Integrates with native Valheim wards (`PrivateArea`) to prevent unauthorized painting within protected territories.
 - **Zero Asset Bundles**: Requires no external Unity assets or bundle files, eliminating bundle desyncs and memory bloat.
 - **Mod Managers**: Fully compatible with **Gale**, **Thunderstore Mod Manager**, and **r2modman**.

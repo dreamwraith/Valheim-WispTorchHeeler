@@ -24,6 +24,10 @@ namespace WispTorchHeeler.Pieces
         public const string NativeDemisterPrefab = "dverger_demister";
         public const string NativeDemisterLargePrefab = "dverger_demister_large";
 
+        public const float NativePlayerBaseRadius = 20.0f;
+        public const float NativeMistClearRadius = 24.0f;
+        public const float NativeLightRange = 10.0f;
+
         private static bool s_piecesRegistered;
 
         public class PieceBaseStats
@@ -103,6 +107,8 @@ namespace WispTorchHeeler.Pieces
             ModConfig.GrandLamp_MistClearRangeMultiplier.SettingChanged += (sender, eventArgs) => UpdatePieceConfiguration(Tier4GrandLampPrefab);
             ModConfig.GrandLamp_LightIntensityMultiplier.SettingChanged += (sender, eventArgs) => UpdatePieceConfiguration(Tier4GrandLampPrefab);
             ModConfig.GrandLamp_LightRangeMultiplier.SettingChanged += (sender, eventArgs) => UpdatePieceConfiguration(Tier4GrandLampPrefab);
+
+            ModConfig.PlayerBaseMistRadiusBonus.SettingChanged += (sender, eventArgs) => UpdateAllPieceConfigurations();
 
             Plugin.LogDebug("[PieceManager] Subscribed to native prefab, piece lifecycle, and config property events.");
         }
@@ -246,13 +252,15 @@ namespace WispTorchHeeler.Pieces
             for (int forceFieldIndex = 0; forceFieldIndex < rawForceFields.Length; forceFieldIndex++)
             {
                 baseStats.ForceFieldStartRanges[forceFieldIndex] = rawForceFields[forceFieldIndex].startRange;
-                baseStats.ForceFieldEndRanges[forceFieldIndex] = rawForceFields[forceFieldIndex].endRange;
+                baseStats.ForceFieldEndRanges[forceFieldIndex] = NativeMistClearRadius;
             }
 
             for (int lightIndex = 0; lightIndex < rawLights.Length; lightIndex++)
             {
+                // All donor prefabs (piece_groundtorch_mist, dverger_demister, dverger_demister_large) natively share 
+                // a 1.0f light intensity; capturing raw intensity preserves that 1.0 baseline and any multi-light ratios.
                 baseStats.LightIntensities[lightIndex] = rawLights[lightIndex].intensity;
-                baseStats.LightRanges[lightIndex] = rawLights[lightIndex].range;
+                baseStats.LightRanges[lightIndex] = NativeLightRange;
             }
 
             BaseStats[customPrefabName] = baseStats;
@@ -365,6 +373,9 @@ namespace WispTorchHeeler.Pieces
 
             // Ensure a right-sized BoxCollider exists on the piece root
             EnsurePieceCollider(clonedGameObject, in colliderCenter, in colliderSize);
+
+            // Ensure PlayerBase exists for mob spawn suppression and base structure recognition
+            EnsurePlayerBase(clonedGameObject);
 
             // Apply initial physical properties (force field mist clearance, light intensity/range, health)
             ApplyProperties(clonedGameObject, customPrefabName);
@@ -586,6 +597,22 @@ namespace WispTorchHeeler.Pieces
             {
                 wearNTear.m_health = health;
             }
+
+            // Update PlayerBase trigger radius adjusted for model transform scale
+            var playerBaseTransform = targetGameObject.transform.Find("PlayerBase");
+            if (playerBaseTransform != null)
+            {
+                var sphereCollider = playerBaseTransform.GetComponent<SphereCollider>();
+                if (sphereCollider != null)
+                {
+                    float activeMistRadius = NativeMistClearRadius * mistClearRangeMultiplier;
+                    float bonus = Mathf.Clamp01(ModConfig.PlayerBaseMistRadiusBonus.Value);
+                    float effectivePlayerBaseRadius = NativePlayerBaseRadius + (activeMistRadius - NativePlayerBaseRadius) * bonus;
+                    var lossyScale = targetGameObject.transform.lossyScale;
+                    float scale = Mathf.Max(Mathf.Abs(lossyScale.x), Mathf.Max(Mathf.Abs(lossyScale.y), Mathf.Abs(lossyScale.z)));
+                    sphereCollider.radius = scale > 0.001f ? effectivePlayerBaseRadius / scale : effectivePlayerBaseRadius;
+                }
+            }
         }
 
         /// <summary>
@@ -686,6 +713,53 @@ namespace WispTorchHeeler.Pieces
             boxCollider.isTrigger = false;
             boxCollider.center = center;
             boxCollider.size = size;
+        }
+
+        /// <summary>
+        /// Ensures a piece possesses a PlayerBase child object on the 'character_trigger' layer with an
+        /// EffectArea (Type = PlayerBase) and a trigger SphereCollider.
+        /// This provides native mob spawn suppression and counts toward player-base structure detection.
+        /// </summary>
+        private static void EnsurePlayerBase(GameObject targetGameObject)
+        {
+            if (targetGameObject == null) return;
+
+            var playerBaseTransform = targetGameObject.transform.Find("PlayerBase");
+            GameObject playerBaseGo;
+            if (playerBaseTransform != null)
+            {
+                playerBaseGo = playerBaseTransform.gameObject;
+            }
+            else
+            {
+                playerBaseGo = new GameObject("PlayerBase");
+                playerBaseGo.transform.SetParent(targetGameObject.transform, false);
+                playerBaseGo.transform.localPosition = Vector3.zero;
+                playerBaseGo.transform.localRotation = Quaternion.identity;
+            }
+
+            int triggerLayer = LayerMask.NameToLayer("character_trigger");
+            if (triggerLayer >= 0)
+            {
+                playerBaseGo.layer = triggerLayer;
+            }
+
+            var sphereCollider = playerBaseGo.GetComponent<SphereCollider>();
+            if (sphereCollider == null)
+            {
+                sphereCollider = playerBaseGo.AddComponent<SphereCollider>();
+            }
+            sphereCollider.isTrigger = true;
+            sphereCollider.center = Vector3.zero;
+
+            var effectArea = playerBaseGo.GetComponent<EffectArea>();
+            if (effectArea == null)
+            {
+                effectArea = playerBaseGo.AddComponent<EffectArea>();
+            }
+            effectArea.m_type = EffectArea.Type.PlayerBase;
+
+            Plugin.LogDebug($"[PieceManager] Configured PlayerBase on '{targetGameObject.name}' (layer: {playerBaseGo.layer}).");
         }
     }
 }

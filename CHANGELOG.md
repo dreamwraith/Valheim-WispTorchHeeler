@@ -5,6 +5,35 @@ All notable changes to **WispTorchHeeler** will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-09-29
+
+### Added
+- **PlayerBase Support on Lamps**: Added `PlayerBase` components and trigger colliders to all custom Dvergr lamps on the `character_trigger` layer so they suppress enemy spawns and count toward player base structure recognition.
+  - *note: I managed to release custom lamps that didn't actually count as base structures. You can now build them without enemies spawning all up in your base.*
+- **Dynamic Spawn Suppression Slider**: Added the `PlayerBaseMistRadiusBonus` server-synced config setting, allowing spawn suppression to scale from the native 20m base up to matching the full mist clearance radius.
+  - *note: If you want your safe zone to match your clear view, now it can. If you leave it at 0, it stays at the native 20m default so the game balance still balances... mostly.*
+- **Normalized Native Baselines**: Standardized internal base values across all tiers to 24m mist clearance, 10m light range, 1.0 light intensity, and 20m PlayerBase suppression radius.
+  - *note: Each fixture originally inherited whatever numbers Iron Gate gave its donor prefab. I should have looked way closer at the default values on the prefabs I was using, as this made the configuration confusing as all hell. Now everything is normalized on the same base values, so the math can math much mathier.*
+
+### Changed
+- **Linear Tier Scaling Toward Grand Demister**: Re-adjusted default mist clearance multipliers to scale in clean +0.75x (+18m) steps up to the 90m Grand Demister default:
+  - Tier 1 (Large Torch): 1.50x (36m)
+  - Tier 2 (Small Lamp): 2.25x (54m)
+  - Tier 3 (Large Lamp): 3.00x (72m)
+  - Tier 4 (Grand Lamp): 3.75x (90m)
+  - *note: The earlier progression was uneven because I was eyeballing multiplier jumps. It now steps by an even 18 meters per tier.*
+- **Normalized Light Scaling**: Light ranges and intensities now scale off common 10m and 1.0 baselines across all tiers.
+  - *note: The large demister prop had a native 20m light range that doubled on top of my multipliers and created a miniature sun. It now scales from 10m like everything else.*
+- **Clean Config Descriptions**: Rewrote config descriptions to state final numbers relative to stated baselines instead of referencing internal prefab mechanics.
+  - *note: All my homies reading config files didn't have a clue what I was rambling about. It now just tells you what baseline number you are multiplying.*
+- **Terminology Cleanup**: Replaced occurrences of "vanilla" with "native" across code comments and documentation.
+  - *note: I know the community loves the term vanilla, but I differ, and prefer native. Nonetheless... I went against my own principles in a few places originally, and have now cleaned those up.*
+
+### Fixed
+- **Crop Growth Blocked by Lamps (Commit `39add34`)**: Fixed piece collider setup in `WispPieceManager` to skip trigger colliders when assigning objects to the `piece` layer. Triggers remain on `character_trigger` (Layer 14).
+  - *note: Yes, my torches were accidentally suffocating your cheesy poofs. Unity triggers placed on physical layers make the crop spacing check think there's a solid rock in the dirt (or above the cheesy poofs knob). This was just me using a blunt instrument to solve a collider problem for the build hammer. No more!*
+
+  
 ## [1.0.0] - 2026-09-24
 
 ### Added

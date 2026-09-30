@@ -12,6 +12,7 @@ namespace WispTorchHeeler.Configuration
         // 1 - General
         public static ConfigEntry<bool> EnableMod = null!;
         public static ConfigEntry<bool> AffectNativeMistTorches = null!;
+        public static ConfigEntry<float> PlayerBaseMistRadiusBonus = null!;
 
         // 2 - Large Torch
         public static ConfigEntry<float> Torch_MistClearRangeMultiplier = null!;
@@ -92,21 +93,25 @@ namespace WispTorchHeeler.Configuration
             AffectNativeMistTorches = BindSynced(config, "1 - General", "AffectNativeMistTorches", true,
                 "Allows painting and color defaults on standard native wisp torches.");
 
+            PlayerBaseMistRadiusBonus = BindSynced(config, "1 - General", "PlayerBaseMistRadiusBonus", 0.0f,
+                "Additive bonus percentage (0.0 to 1.0) scaling PlayerBase spawn suppression from a baseline of 20.0m toward active mist clearance radius. At 0.0, all custom pieces use the 20.0m baseline. At 1.0, the suppression radius matches the active mist reveal boundary. Note: higher values reduce native spawn balance in favor of mist sanctuary.",
+                new AcceptableValueRange<float>(0.0f, 1.0f));
+
             // 2 - Large Torch
             Torch_MistClearRangeMultiplier = BindSynced(config, "2 - Large Torch", "Torch_MistClearRangeMultiplier", 1.5f,
-                "Large torch mist clearance force field radius multiplier (1.0 - 10.0).",
+                "Large torch mist clearance radius multiplier (relative to 24.0m baseline, range: 1.0 - 10.0).",
                 new AcceptableValueRange<float>(1.0f, 10.0f));
 
             Torch_LightIntensityMultiplier = BindSynced(config, "2 - Large Torch", "Torch_LightIntensityMultiplier", 1.33f,
-                "Large torch light emission intensity multiplier (0.5 - 5.0).",
+                "Large torch light emission intensity multiplier (relative to 1.0 baseline, range: 0.5 - 5.0).",
                 new AcceptableValueRange<float>(0.5f, 5.0f));
 
             Torch_LightRangeMultiplier = BindSynced(config, "2 - Large Torch", "Torch_LightRangeMultiplier", 1.25f,
-                "Large torch light emission range radius multiplier (0.5 - 5.0).",
+                "Large torch light emission range radius multiplier (relative to 10.0m baseline, range: 0.5 - 5.0).",
                 new AcceptableValueRange<float>(0.5f, 5.0f));
 
             Torch_Health = BindSynced(config, "2 - Large Torch", "Torch_Health", 200.0f,
-                "Large torch structural health points (1.0 - 5000.0, double native torch).",
+                "Large torch structural health points (1.0 - 5000.0).",
                 new AcceptableValueRange<float>(1.0f, 5000.0f));
 
             Torch_CraftingStation = BindSynced(config, "2 - Large Torch", "Torch_CraftingStation", "",
@@ -117,16 +122,16 @@ namespace WispTorchHeeler.Configuration
                 customDrawer: RecipeConfigDrawer.Draw);
 
             // 3 - Small Lamp
-            SmallLamp_MistClearRangeMultiplier = BindSynced(config, "3 - Small Lamp", "SmallLamp_MistClearRangeMultiplier", 2.0f,
-                "Tier 2 small lamp mist clearance radius multiplier (1.0 - 10.0).",
+            SmallLamp_MistClearRangeMultiplier = BindSynced(config, "3 - Small Lamp", "SmallLamp_MistClearRangeMultiplier", 2.25f,
+                "Tier 2 small lamp mist clearance radius multiplier (relative to 24.0m baseline, range: 1.0 - 10.0).",
                 new AcceptableValueRange<float>(1.0f, 10.0f));
 
             SmallLamp_LightIntensityMultiplier = BindSynced(config, "3 - Small Lamp", "SmallLamp_LightIntensityMultiplier", 1.5f,
-                "Tier 2 small lamp light emission intensity multiplier (0.5 - 5.0).",
+                "Tier 2 small lamp light emission intensity multiplier (relative to 1.0 baseline, range: 0.5 - 5.0).",
                 new AcceptableValueRange<float>(0.5f, 5.0f));
 
             SmallLamp_LightRangeMultiplier = BindSynced(config, "3 - Small Lamp", "SmallLamp_LightRangeMultiplier", 1.5f,
-                "Tier 2 small lamp light emission range radius multiplier (0.5 - 5.0).",
+                "Tier 2 small lamp light emission range radius multiplier (relative to 10.0m baseline, range: 0.5 - 5.0).",
                 new AcceptableValueRange<float>(0.5f, 5.0f));
 
             SmallLamp_Health = BindSynced(config, "3 - Small Lamp", "SmallLamp_Health", 250.0f,
@@ -141,16 +146,16 @@ namespace WispTorchHeeler.Configuration
                 customDrawer: RecipeConfigDrawer.Draw);
 
             // 4 - Large Lamp
-            LargeLamp_MistClearRangeMultiplier = BindSynced(config, "4 - Large Lamp", "LargeLamp_MistClearRangeMultiplier", 2.5f,
-                "Tier 3 lamp mist clearance radius multiplier (1.0 - 15.0).",
+            LargeLamp_MistClearRangeMultiplier = BindSynced(config, "4 - Large Lamp", "LargeLamp_MistClearRangeMultiplier", 3.0f,
+                "Tier 3 lamp mist clearance radius multiplier (relative to 24.0m baseline, range: 1.0 - 15.0).",
                 new AcceptableValueRange<float>(1.0f, 15.0f));
 
             LargeLamp_LightIntensityMultiplier = BindSynced(config, "4 - Large Lamp", "LargeLamp_LightIntensityMultiplier", 2.25f,
-                "Tier 3 lamp light emission intensity multiplier (0.5 - 8.0).",
+                "Tier 3 lamp light emission intensity multiplier (relative to 1.0 baseline, range: 0.5 - 8.0).",
                 new AcceptableValueRange<float>(0.5f, 8.0f));
 
             LargeLamp_LightRangeMultiplier = BindSynced(config, "4 - Large Lamp", "LargeLamp_LightRangeMultiplier", 1.75f,
-                "Tier 3 lamp light emission range radius multiplier (0.5 - 5.0).",
+                "Tier 3 lamp light emission range radius multiplier (relative to 10.0m baseline, range: 0.5 - 5.0).",
                 new AcceptableValueRange<float>(0.5f, 5.0f));
 
             LargeLamp_Health = BindSynced(config, "4 - Large Lamp", "LargeLamp_Health", 500.0f,
@@ -165,16 +170,16 @@ namespace WispTorchHeeler.Configuration
                 customDrawer: RecipeConfigDrawer.Draw);
 
             // 5 - Grand Lamp
-            GrandLamp_MistClearRangeMultiplier = BindSynced(config, "5 - Grand Lamp", "GrandLamp_MistClearRangeMultiplier", 3.0f,
-                "Tier 4 grand lamp mist clearance radius multiplier (1.0 - 15.0).",
+            GrandLamp_MistClearRangeMultiplier = BindSynced(config, "5 - Grand Lamp", "GrandLamp_MistClearRangeMultiplier", 3.75f,
+                "Tier 4 grand lamp mist clearance radius multiplier (relative to 24.0m baseline, range: 1.0 - 15.0).",
                 new AcceptableValueRange<float>(1.0f, 15.0f));
 
             GrandLamp_LightIntensityMultiplier = BindSynced(config, "5 - Grand Lamp", "GrandLamp_LightIntensityMultiplier", 2.5f,
-                "Tier 4 grand lamp light emission intensity multiplier (0.5 - 8.0).",
+                "Tier 4 grand lamp light emission intensity multiplier (relative to 1.0 baseline, range: 0.5 - 8.0).",
                 new AcceptableValueRange<float>(0.5f, 8.0f));
 
             GrandLamp_LightRangeMultiplier = BindSynced(config, "5 - Grand Lamp", "GrandLamp_LightRangeMultiplier", 2.0f,
-                "Tier 4 grand lamp light emission range radius multiplier (0.5 - 8.0).",
+                "Tier 4 grand lamp light emission range radius multiplier (relative to 10.0m baseline, range: 0.5 - 8.0).",
                 new AcceptableValueRange<float>(0.5f, 8.0f));
 
             GrandLamp_Health = BindSynced(config, "5 - Grand Lamp", "GrandLamp_Health", 750.0f,
