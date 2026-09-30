@@ -347,14 +347,19 @@ namespace WispTorchHeeler.Pieces
                 }
             }
 
-            // Ensure colliders are on the 'piece' layer so the building hammer can target, repair, and deconstruct it
+            // Ensure physical colliders are on the 'piece' layer so the building hammer can target, repair, and deconstruct it.
+            // Never promote trigger colliders (such as the native torch's PlayerBase EffectArea SphereCollider),
+            // as placing triggers on physical layers causes Plant.HaveGrowSpace() to detect them as physical obstructions.
             int pieceLayer = LayerMask.NameToLayer("piece");
             if (pieceLayer >= 0)
             {
                 clonedGameObject.layer = pieceLayer;
                 foreach (var collider in clonedGameObject.GetComponentsInChildren<Collider>(true))
                 {
-                    collider.gameObject.layer = pieceLayer;
+                    if (!collider.isTrigger)
+                    {
+                        collider.gameObject.layer = pieceLayer;
+                    }
                 }
             }
 
