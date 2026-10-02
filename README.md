@@ -1,6 +1,6 @@
 # WispTorchHeeler
 
-Tiered Mistlands wisp torches and demister lamps with expanded mist clearance, interactive torch painting, and multiplayer color synchronization.
+Tiered Mistlands wisp torches and demister lamps with expanded mist clearance, interactive torch painting, body-worn Wisplight customization, and multiplayer color synchronization.
 
 > [!NOTE]
 > **Client & Server Compatibility:** This mod is safe to install on local clients and runs cleanly on dedicated servers with zero desyncs and server-enforced policies. For custom pieces in multiplayer, both client and server require the mod.
@@ -25,6 +25,7 @@ In native Valheim, clearing the thick mist of the Mistlands requires placing doz
 - **Tiered Mist Clearance**: Four distinct lighting fixtures ranging from reinforced large torches to colossal dwarven monuments, clearing up to **3.75×** the fog radius (~14× coverage area) to drastically reduce piece density and visual clutter.
 - **Interactive Torch Painter**: Aim at any placed torch or lamp and press **`P`** to instantly paint its light and particle effects with your chosen color, or **`LeftShift + P`** to reset it.
 - **Auto-Paint on Placement**: Newly placed torches and lamps can automatically inherit your active painter color the instant you build them.
+- **Body-Worn Wisplight Customization**: Full cosmetic customization for your equipped Wisplight accessory (the floating `demister_ball` follower orb), including custom color, light and emission intensity multipliers, alpha transparency, and multiplayer color sync.
 - **Multiplayer & Server-Synchronized**: Stamped directly into each piece's `ZDO` at creation with zero desync. Unpainted pieces can inherit client-chosen defaults or server-enforced color themes, with ward-protection permissions and admin overrides.
 - **Zero Asset Bundles**: Cloned cleanly from native Valheim prefabs at runtime using Jötunn, ensuring instant load times and lightweight installation.
 
@@ -79,6 +80,17 @@ In native Valheim, clearing the thick mist of the Mistlands requires placing doz
 * **Multiplayer Synchronization**: Painted colors synchronize across all clients via ZDO and persistent world storage without requiring external asset bundles.
 * **Visual Mist Boundary**: Enable `ShowMistSuppressionRadius` in debug config to project a real-time ground ring showing the active mist suppression radius of all wisp pieces.
 
+### Body-Worn Wisplight Customization
+
+Cosmetic customization for the player-equipped **Wisplight** utility accessory (the flying follower orb, referenced internally and in config as `Demister` / `demister_ball`):
+
+* **Custom Color**: Choose your Wisplight color via `DemisterColor` in the Configuration Manager (F1) or config file.
+* **Point Light & Emission Multipliers**: Scale the Wisplight's point light intensity (`DemisterLightIntensityMultiplier`, 0.1×–5.0×) and core shader emission brightness (`DemisterEmissionIntensityMultiplier`, 0.1×–5.0×) independently.
+* **Alpha Transparency**: Optional transparency for your Wisplight via `DemisterEnableAlpha`. Clamped to a 15% minimum to prevent invisibility.
+* **Multiplayer Color Sync**: When enabled (`DemisterSyncMultiplayer`), your Wisplight color is written to the follower orb's ZDO (`wisptorch_demister_color`) and visible to other players running the mod.
+* **Intensity Multipliers Are Client-Local**: Your light and emission intensity settings stay strictly local—other players' Wisplights always render on your screen at default calibrated brightness.
+* **Strictly Cosmetic**: Does not alter mist suppression radius, clearance force fields, or Wisplight equipment stats.
+
 ---
 
 ## Configuration
@@ -127,8 +139,14 @@ Settings can be customized directly in-game using the BepInEx **Configuration Ma
 | `8 - Torch Painter` | `PainterRaycastDistance` | `float` | `10.0` | Maximum distance in meters to aim and paint a piece (2.0 - 25.0). |
 | `8 - Torch Painter` | `ShowPainterFeedback` | `bool` | `true` | Shows on-screen HUD text confirmations upon painting/resetting. |
 | `8 - Torch Painter` | `AutoPaintOnPlacement` | `bool` | `false` | If true, newly placed torches and lamps are automatically painted with your active PainterColor upon placement. |
-| `9 - Debug` | `EnableDebugLogs` | `bool` | `false` | Enables verbose diagnostic logging in the BepInEx console. |
-| `9 - Debug` | `ShowMistSuppressionRadius` | `bool` | `false` | Projects a ground boundary ring around wisp torches and lamps showing their active mist suppression radius. |
+| `9 - Worn Demister` | `EnableDemisterCustomization` | `bool` | `true` | Enables cosmetic customization of color, lighting, and emissive properties for your equipped Wisplight accessory. |
+| `9 - Worn Demister` | `DemisterSyncMultiplayer` | `bool` | `true` | Broadcasts your Wisplight color to your follower orb ZDO so other players with this mod see your custom color. |
+| `9 - Worn Demister` | `DemisterColor` | `Color` | `#B4F0FF` | Active cosmetic color for your Wisplight, particles, and emissive glow. |
+| `9 - Worn Demister` | `DemisterLightIntensityMultiplier` | `float` | `1.0` | Multiplier scaling the brightness of the point light emitted by your Wisplight (0.1 - 5.0). |
+| `9 - Worn Demister` | `DemisterEmissionIntensityMultiplier` | `float` | `1.0` | Multiplier scaling the shader emission brightness of your Wisplight core ball and glow (0.1 - 5.0). |
+| `9 - Worn Demister` | `DemisterEnableAlpha` | `bool` | `false` | Allows the alpha channel of DemisterColor to customize Wisplight particle and material transparency (safely clamped to 15% floor to prevent invisibility). |
+| `10 - Debug` | `EnableDebugLogs` | `bool` | `false` | Enables verbose diagnostic logging in the BepInEx console. |
+| `10 - Debug` | `ShowMistSuppressionRadius` | `bool` | `false` | Projects a ground boundary ring around wisp torches and lamps showing their active mist suppression radius. |
 
 ---
 

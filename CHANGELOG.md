@@ -5,6 +5,23 @@ All notable changes to **WispTorchHeeler** will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-10-02
+
+### Added
+- **Body-Worn Wisplight Customization**: Cosmetic customization for the equipped Wisplight follower orb (the floating `demister_ball` accessory), including color, point light intensity (0.1×–5.0×), and emissive glow multiplier (0.1×–5.0×).
+  - *note: Your wisplight now uses your color setup instead of being stuck at stock cyan.*
+- **Wisplight Multiplayer Color Sync**: Replicates follower orb color to other clients via ZDO string key `wisptorch_demister_color` with local polling. Light and emission intensity multipliers are client-local and do not replicate.
+  - *note: Other players with the mod see your wisplight color. Light and emission multipliers stay local so nobody's 5.0× intensity setting affects your screen.*
+- **Wisplight Alpha Transparency**: Optional alpha transparency (`DemisterEnableAlpha`) clamped to a 15% minimum to prevent invisibility.
+  - *note: You can tone the orb down, but it's clamped at 15% so you don't accidentally make it invisible.*
+- **Configuration Section `9 - Worn Demister`**: Added 6 config entries for Wisplight customization, lighting, and multiplayer sync. `EnableDemisterCustomization` and `DemisterSyncMultiplayer` support server/client sync toggles via `ConditionalConfigSync`.
+  - *note: Server admins can toggle server control per-setting if they want to enforce stock wisplights or let players do their thing.*
+- **`DemisterPatches`**: `ZNetView.Awake` postfix attaching `WispDemisterColorController` to demister ball objects. Prefab hash pre-filter keeps per-object overhead negligible.
+
+### Changed
+- **`WispVisualApplicator`**: Extracted shared rendering logic (lights, particle gradient tinting, material instancing, shader properties) into a standalone class used by both `WispTorchColorController` and `WispDemisterColorController`, removing duplicated code.
+- **Config event wiring moved to `Initialize()` methods**: `Plugin.cs` now calls `WispTorchColorController.Initialize()` and `WispDemisterColorController.Initialize()` rather than wiring events inline.
+
 ## [1.1.0] - 2026-09-29
 
 ### Added

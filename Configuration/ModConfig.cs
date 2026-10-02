@@ -1,7 +1,6 @@
 using System;
 using BepInEx.Configuration;
 using UnityEngine;
-using WispTorchHeeler.Lighting;
 
 namespace WispTorchHeeler.Configuration
 {
@@ -67,7 +66,15 @@ namespace WispTorchHeeler.Configuration
         public static ConfigEntry<bool> ShowPainterFeedback = null!;
         public static ConfigEntry<bool> AutoPaintOnPlacement = null!;
 
-        // 9 - Debug
+        // 9 - Worn Demister
+        public static ConfigEntry<bool> EnableDemisterCustomization = null!;
+        public static ConfigEntry<bool> DemisterSyncMultiplayer = null!;
+        public static ConfigEntry<Color> DemisterColor = null!;
+        public static ConfigEntry<float> DemisterLightIntensityMultiplier = null!;
+        public static ConfigEntry<float> DemisterEmissionIntensityMultiplier = null!;
+        public static ConfigEntry<bool> DemisterEnableAlpha = null!;
+
+        // 10 - Debug
         public static ConfigEntry<bool> EnableDebugLogs = null!;
         public static ConfigEntry<bool> ShowMistSuppressionRadius = null!;
 
@@ -239,11 +246,32 @@ namespace WispTorchHeeler.Configuration
             // Register buttons into Valheim's native ZInput via Jotunn InputManager
             RegisterInputButtons();
 
-            // 9 - Debug
-            EnableDebugLogs = BindClient(config, "9 - Debug", "EnableDebugLogs", false,
+            // 9 - Worn Demister
+            EnableDemisterCustomization = BindSynced(config, "9 - Worn Demister", "EnableDemisterCustomization", true,
+                "Enables cosmetic customization of color, lighting, and emissive properties for your body-worn Demister wisplight accessory.");
+
+            DemisterSyncMultiplayer = BindSynced(config, "9 - Worn Demister", "DemisterSyncMultiplayer", true,
+                "Broadcasts your demister color to your wisplight follower orb ZDO so other players with this mod see your custom demister color.");
+
+            DemisterColor = BindClient(config, "9 - Worn Demister", "DemisterColor", s_defaultCyan,
+                "Active cosmetic color for your body-worn Demister light, particles, and emissive glow.");
+
+            DemisterLightIntensityMultiplier = BindClient(config, "9 - Worn Demister", "DemisterLightIntensityMultiplier", 1.0f,
+                "Multiplier scaling the brightness of the point light emitted by your body-worn Demister (0.1 - 5.0).",
+                new AcceptableValueRange<float>(0.1f, 5.0f));
+
+            DemisterEmissionIntensityMultiplier = BindClient(config, "9 - Worn Demister", "DemisterEmissionIntensityMultiplier", 1.0f,
+                "Multiplier scaling the shader emission brightness of your body-worn Demister core ball and glow (0.1 - 5.0).",
+                new AcceptableValueRange<float>(0.1f, 5.0f));
+
+            DemisterEnableAlpha = BindClient(config, "9 - Worn Demister", "DemisterEnableAlpha", false,
+                "Allows the alpha channel of DemisterColor to customize particle and material transparency (safely clamped to 15% floor to prevent invisibility).");
+
+            // 10 - Debug
+            EnableDebugLogs = BindClient(config, "10 - Debug", "EnableDebugLogs", false,
                 "Enables verbose diagnostic logging in the BepInEx console.");
 
-            ShowMistSuppressionRadius = BindClient(config, "9 - Debug", "ShowMistSuppressionRadius", false,
+            ShowMistSuppressionRadius = BindClient(config, "10 - Debug", "ShowMistSuppressionRadius", false,
                 "Projects a ground boundary ring around wisp torches and lamps showing their active mist suppression radius.");
 
             Plugin.LogDebug("Configuration initialized and bound.");

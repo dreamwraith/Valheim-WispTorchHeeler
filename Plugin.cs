@@ -44,14 +44,9 @@ namespace WispTorchHeeler
             // 3. Initialize custom pieces and prefabs
             WispPieceManager.Initialize();
 
-            // 4. Hook setting changed events for dynamic updates
-            ModConfig.EnableMod.SettingChanged += (sender, eventArgs) => WispTorchColorController.RefreshAll();
-            ModConfig.DefaultLightColor.SettingChanged += (sender, eventArgs) => WispTorchColorController.RefreshAll();
-            ModConfig.ServerDefaultLightColor.SettingChanged += (sender, eventArgs) => WispTorchColorController.RefreshAll();
-            ModConfig.EnforceServerDefaultColor.SettingChanged += (sender, eventArgs) => WispTorchColorController.RefreshAll();
-            ModConfig.AffectNativeMistTorches.SettingChanged += (sender, eventArgs) => WispTorchColorController.RefreshAll();
-            ModConfig.EnableAlphaCustomization.SettingChanged += (sender, eventArgs) => WispTorchColorController.RefreshAll();
-            ModConfig.ShowMistSuppressionRadius.SettingChanged += (sender, eventArgs) => WispTorchColorController.RefreshAllMarkers();
+            // 4. Initialize lighting and demister controllers
+            WispTorchColorController.Initialize();
+            WispDemisterColorController.Initialize();
 
             // 5. Apply Harmony patches
             _harmony = Harmony.CreateAndPatchAll(Assembly.GetExecutingAssembly(), ModGUID);
