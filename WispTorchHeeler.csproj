@@ -8,7 +8,7 @@
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-    <Version>1.2.1</Version>
+    <Version>1.2.2</Version>
     <AssemblyVersion>$(Version)</AssemblyVersion>
     <FileVersion>$(Version)</FileVersion>
     <InformationalVersion>$(Version)</InformationalVersion>
@@ -19,6 +19,10 @@
     <Description>Tiered Mistlands wisp torches and lamps with expanded mist clearance, interactive torch painting, body-worn Wisplight customization, and multiplayer color synchronization. For more information, visit https://github.com/dreamwraith</Description>
     <PackageProjectUrl>https://github.com/dreamwraith</PackageProjectUrl>
     <RepositoryUrl>https://github.com/dreamwraith/Valheim-WispTorchHeeler</RepositoryUrl>
+    <!-- Nexus Mods Identifiers -->
+    <NexusModId>4331</NexusModId>
+    <NexusFileId>
+    </NexusFileId>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>

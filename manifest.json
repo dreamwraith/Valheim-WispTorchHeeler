@@ -1,7 +1,7 @@
 {
   "name": "WispTorchHeeler",
-  "version_number": "1.2.1",
-  "website_url": "https://github.com/dreamwraith/Valheim-WispTorchHeeler",
+  "version_number": "1.2.2",
+  "website_url": "https://github.com/dreamwraith",
   "description": "Tiered Mistlands wisp torches and lamps with expanded mist clearance, interactive torch painting, body-worn Wisplight customization, and multiplayer color synchronization.",
   "dependencies": [
     "denikson-BepInExPack_Valheim-5.4.2350",

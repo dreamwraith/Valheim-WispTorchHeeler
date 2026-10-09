@@ -17,5 +17,9 @@
     <!-- Example r2modman / Thunderstore: $(UserProfile)\AppData\Roaming\r2modmanPlus-local\Valheim\profiles\<ProfileName>\BepInEx\core -->
     <BepInExCorePath>$(GamePath)\BepInEx\core</BepInExCorePath>
     <BepInExPluginsPath>$(GamePath)\BepInEx\plugins</BepInExPluginsPath>
+      <!-- Optional: Override Nexus Mods mod or file IDs locally -->
+    <!-- <NexusModId>4331</NexusModId> -->
+    <!-- <NexusFileId>12345</NexusFileId> -->
   </PropertyGroup>
 </Project>
+
