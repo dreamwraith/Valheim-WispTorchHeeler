@@ -87,6 +87,7 @@ Cosmetic customization for the player-equipped **Wisplight** utility accessory (
 * **Custom Color**: Choose your Wisplight color via `DemisterColor` in the Configuration Manager (F1) or config file.
 * **Point Light & Emission Multipliers**: Scale the Wisplight's point light intensity (`DemisterLightIntensityMultiplier`, 0.1×–5.0×) and core shader emission brightness (`DemisterEmissionIntensityMultiplier`, 0.1×–5.0×) independently.
 * **Alpha Transparency**: Optional transparency for your Wisplight via `DemisterEnableAlpha`. Clamped to a 15% minimum to prevent invisibility.
+* **Idle Hover Speed & Radius Multipliers**: Calms and smooths the Wisplight's idle animation (`DemisterIdleSpeedMultiplier`, 0.0–2.0) and wander radius (`DemisterIdleRadiusMultiplier`, 0.0–2.0) to eliminate rapid fly-like buzzing and jittering around your head.
 * **Multiplayer Color Sync**: When enabled (`DemisterSyncMultiplayer`), your Wisplight color is written to the follower orb's ZDO (`wisptorch_demister_color`) and visible to other players running the mod.
 * **Intensity Multipliers Are Client-Local**: Your light and emission intensity settings stay strictly local—other players' Wisplights always render on your screen at default calibrated brightness.
 * **Strictly Cosmetic**: Does not alter mist suppression radius, clearance force fields, or Wisplight equipment stats.
@@ -145,6 +146,8 @@ Settings can be customized directly in-game using the BepInEx **Configuration Ma
 | `9 - Worn Demister` | `DemisterLightIntensityMultiplier` | `float` | `1.0` | Multiplier scaling the brightness of the point light emitted by your Wisplight (0.1 - 5.0). |
 | `9 - Worn Demister` | `DemisterEmissionIntensityMultiplier` | `float` | `1.0` | Multiplier scaling the shader emission brightness of your Wisplight core ball and glow (0.1 - 5.0). |
 | `9 - Worn Demister` | `DemisterEnableAlpha` | `bool` | `false` | Allows the alpha channel of DemisterColor to customize Wisplight particle and material transparency (safely clamped to 15% floor to prevent invisibility). |
+| `9 - Worn Demister` | `DemisterIdleSpeedMultiplier` | `float` | `1.0` | Multiplier scaling the idle bobbing and fluttering speed of your equipped Wisplight follower orb (0.0 - 2.0; 0.3 is calm, 1.0 is native Valheim speed, 0.0 freezes idle motion). |
+| `9 - Worn Demister` | `DemisterIdleRadiusMultiplier` | `float` | `1.0` | Multiplier scaling the hover and jitter distance of your equipped Wisplight follower orb around your head (0.0 - 2.0; 1.0 is native Valheim distance). |
 | `10 - Debug` | `EnableDebugLogs` | `bool` | `false` | Enables verbose diagnostic logging in the BepInEx console. |
 | `10 - Debug` | `ShowMistSuppressionRadius` | `bool` | `false` | Projects a ground boundary ring around wisp torches and lamps showing their active mist suppression radius. |
 
@@ -199,6 +202,19 @@ For non-standard Steam library locations or mod manager profiles, copy `WispTorc
   </PropertyGroup>
 </Project>
 ```
+
+---
+
+## Packaging, Publishing & Releases
+
+All developer automation tools for release management, packaging, and publishing to **Thunderstore** and **Hexium** are organized in the [`.scripts/`](.scripts/) folder:
+
+- **Release Management**: [`release.ps1`](.scripts/release.ps1) compiles in `Release`, creates mod & source archives, extracts changelog notes, and publishes GitHub Releases (Draft by default, or published with `-Publish`) using the `gh` CLI.
+- **Packaging & Version Bumping**: [`package.ps1`](.scripts/package.ps1) increments SemVer in `WispTorchHeeler.csproj`, updates `manifest.json`, and bundles distribution archives.
+- **Portal Publishing**: [`publish.ps1`](.scripts/publish.ps1) uploads directly to Thunderstore and Hexium APIs.
+- **CI/CD Workflow**: [`.github/workflows/publish.yml`](.github/workflows/publish.yml) provides an automated GitHub Actions workflow to publish to Thunderstore and Hexium whenever a GitHub Release is published.
+
+For detailed documentation on flags, workflows, and secret configuration, see [`.scripts/README.md`](.scripts/README.md).
 
 ---
 

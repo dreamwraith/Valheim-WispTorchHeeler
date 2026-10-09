@@ -5,6 +5,13 @@ All notable changes to **WispTorchHeeler** will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.1] - 2026-10-08
+
+### Added
+- **Wisplight Idle Animation Speed & Radius Multipliers**: Added `DemisterIdleSpeedMultiplier` (0.0–2.0, default 1.0) and `DemisterIdleRadiusMultiplier` (0.0–2.0, default 1.0) client config options to calm and smooth the equipped Wisplight's idle hover animation and eliminate frantic fly-like buzzing.
+  - *note: The wisplight now glides slowly and gracefully around your head instead of darting like an agitated insect. You can adjust the speed or freeze it in place completely.*
+- **Modern Build & Release Automation**: Upgraded repository release tooling with SSOT versioning, multi-portal publishing (`.scripts/`), and automated GitHub Actions CI/CD.
+
 ## [1.2.0] - 2026-10-02
 
 ### Added

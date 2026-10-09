@@ -73,6 +73,8 @@ namespace WispTorchHeeler.Configuration
         public static ConfigEntry<float> DemisterLightIntensityMultiplier = null!;
         public static ConfigEntry<float> DemisterEmissionIntensityMultiplier = null!;
         public static ConfigEntry<bool> DemisterEnableAlpha = null!;
+        public static ConfigEntry<float> DemisterIdleSpeedMultiplier = null!;
+        public static ConfigEntry<float> DemisterIdleRadiusMultiplier = null!;
 
         // 10 - Debug
         public static ConfigEntry<bool> EnableDebugLogs = null!;
@@ -266,6 +268,14 @@ namespace WispTorchHeeler.Configuration
 
             DemisterEnableAlpha = BindClient(config, "9 - Worn Demister", "DemisterEnableAlpha", false,
                 "Allows the alpha channel of DemisterColor to customize particle and material transparency (safely clamped to 15% floor to prevent invisibility).");
+
+            DemisterIdleSpeedMultiplier = BindClient(config, "9 - Worn Demister", "DemisterIdleSpeedMultiplier", 1.0f,
+                "Multiplier scaling the idle bobbing and fluttering speed of your equipped Wisplight follower orb (0.0 - 2.0). Lower values create a calm, gentle drift; 1.0 is native Valheim speed; 0.0 freezes idle motion.",
+                new AcceptableValueRange<float>(0.0f, 2.0f));
+
+            DemisterIdleRadiusMultiplier = BindClient(config, "9 - Worn Demister", "DemisterIdleRadiusMultiplier", 1.0f,
+                "Multiplier scaling the hover and jitter distance of your equipped Wisplight follower orb around your head (0.0 - 2.0). Lower values keep the orb closer to your shoulder; 1.0 is native Valheim distance.",
+                new AcceptableValueRange<float>(0.0f, 2.0f));
 
             // 10 - Debug
             EnableDebugLogs = BindClient(config, "10 - Debug", "EnableDebugLogs", false,

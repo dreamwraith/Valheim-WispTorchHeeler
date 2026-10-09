@@ -38,5 +38,34 @@ namespace WispTorchHeeler.Patches
                 }
             }
         }
+
+        /// <summary>
+        /// Smooths and calms the equipped Wisplight (SE_Demister) idle hover animation and wander radius.
+        /// Eliminates rapid fly-like buzzing and jittering around the player's head.
+        /// </summary>
+        [HarmonyPatch(typeof(SE_Demister), nameof(SE_Demister.UpdateStatusEffect))]
+        public static class SE_Demister_UpdateStatusEffect_Patch
+        {
+            [HarmonyPrefix]
+            public static void Prefix(SE_Demister __instance)
+            {
+                if (!ModConfig.EnableMod.Value || !ModConfig.EnableDemisterCustomization.Value)
+                {
+                    __instance.m_noiseSpeed = 1f;
+                    __instance.m_rotationSpeed = 1f;
+                    __instance.m_noiseDistance = 1f;
+                    __instance.m_noiseDistanceInterior = 0.2f;
+                    return;
+                }
+
+                float speedMultiplier = ModConfig.DemisterIdleSpeedMultiplier.Value;
+                float radiusMultiplier = ModConfig.DemisterIdleRadiusMultiplier.Value;
+
+                __instance.m_noiseSpeed = 1f * speedMultiplier;
+                __instance.m_rotationSpeed = 1f * speedMultiplier;
+                __instance.m_noiseDistance = 1f * radiusMultiplier;
+                __instance.m_noiseDistanceInterior = 0.2f * radiusMultiplier;
+            }
+        }
     }
 }
