@@ -5,8 +5,7 @@
 [![Last Commit](https://img.shields.io/github/last-commit/dreamwraith/Valheim-WispTorchHeeler?logo=git)](https://github.com/dreamwraith/Valheim-WispTorchHeeler/commits/main)
 [![Publish Status](https://img.shields.io/github/actions/workflow/status/dreamwraith/Valheim-WispTorchHeeler/publish.yml?label=Publish%20Portals&logo=githubactions)](https://github.com/dreamwraith/Valheim-WispTorchHeeler/actions)
 [![Thunderstore](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fthunderstore.io%2Fapi%2Fexperimental%2Fpackage%2FDreamWraith%2FWispTorchHeeler%2F&query=%24.latest.version_number&label=Thunderstore&logo=thunderstore&color=2980b9)](https://thunderstore.io/c/valheim/p/DreamWraith/WispTorchHeeler/)
-[![Hexium](https://img.shields.io/badge/Hexium-WispTorchHeeler-6c5ce7)](https://valheim.hexium.gg/mods/DreamWraith/WispTorchHeeler)
-[![Nexus Mods](https://img.shields.io/badge/Nexus_Mods-4331-da8e35?logo=nexusmods&logoColor=white)](https://www.nexusmods.com/valheim/mods/4331)
+[![Nexus Mods](https://img.shields.io/badge/Nexus_Mods-WispTorchHeeler-da8d24?logo=nexusmods)](https://www.nexusmods.com/valheim/mods/4331)
 [![Game: Valheim](https://img.shields.io/badge/Valheim-Deep_North_%2F_1.x-1b2838?logo=steam&logoColor=white)](https://store.steampowered.com/app/892970/Valheim/)
 [![BepInEx Pack](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fthunderstore.io%2Fapi%2Fexperimental%2Fpackage%2Fdenikson%2FBepInExPack_Valheim%2F&query=%24.latest.version_number&label=BepInEx&color=5B57E7)](https://valheim.thunderstore.io/package/denikson/BepInExPack_Valheim/)
 [![Target: .NET 4.8](https://img.shields.io/badge/.NET%20Framework-4.8-512BD4?logo=dotnet)](WispTorchHeeler.csproj)
@@ -49,7 +48,7 @@ In native Valheim, clearing the thick mist of the Mistlands requires placing doz
 
 ### Tiered Lighting Installations
 
-1. **Tier 1 — Large Wisp Torch (`piece_wisptorch_heeler_lg`)**:
+1. **Tier 1: Large Wisp Torch (`piece_wisptorch_heeler_lg`)**:
    - Cloned from the native wooden wisp torch and scaled physically by **`1.25x`**.
    - **Mist Clearance**: **1.50×** radius (relative to 24.0m baseline: **36.0m** radius, ~2.25× coverage area).
    - **Light**: **1.33×** intensity and **1.25×** range (**12.5m** light radius).
@@ -57,7 +56,7 @@ In native Valheim, clearing the thick mist of the Mistlands requires placing doz
    - **Durability**: **200 HP** and immune to weather decay.
    - **Crafting**: Placed freeform with the building hammer (`Wisp:8,YggdrasilWood:5,Sap:1`).
 
-2. **Tier 2 — Small Lamp (`piece_wisplamp_heeler`)**:
+2. **Tier 2: Small Lamp (`piece_wisplamp_heeler`)**:
    - In-game Name: *Dvergr Wisp Lamp*
    - Adapts the native Dvergr Demister prop at natural **`1.0x`** scale.
    - **Mist Clearance**: **2.25×** radius (relative to 24.0m baseline: **54.0m** radius, ~5.0× coverage area).
@@ -66,7 +65,7 @@ In native Valheim, clearing the thick mist of the Mistlands requires placing doz
    - **Durability**: **250 HP** and immune to weather decay.
    - **Crafting**: Requires a **Forge** (`Wisp:15,Copper:5,Iron:2,BlackMarble:2,Sap:2`).
 
-3. **Tier 3 — Large Lamp (`piece_wisplamp_heeler_lg`)**:
+3. **Tier 3: Large Lamp (`piece_wisplamp_heeler_lg`)**:
    - In-game Name: *Large Dvergr Wisp Lamp*
    - Cloned from the large Dvergr demister model and scaled up by **`1.1x`**.
    - **Mist Clearance**: **3.00×** radius (relative to 24.0m baseline: **72.0m** radius, 9.0× coverage area).
@@ -75,7 +74,7 @@ In native Valheim, clearing the thick mist of the Mistlands requires placing doz
    - **Durability**: **500 HP** and immune to weather decay.
    - **Crafting**: Requires a **Black Forge** (`Wisp:22,Copper:8,Iron:3,Eitr:2,BlackMarble:5`).
 
-4. **Tier 4 — Grand Lamp (`piece_wisplamp_heeler_grand`)**:
+4. **Tier 4: Grand Lamp (`piece_wisplamp_heeler_grand`)**:
    - In-game Name: *Grand Dvergr Wisp Lamp*
    - Cloned from the large Dvergr demister model and scaled up by **`1.5x`**.
    - **Mist Clearance**: **3.75×** radius (relative to 24.0m baseline: **90.0m** radius, ~14.0× coverage area).
@@ -99,11 +98,11 @@ In native Valheim, clearing the thick mist of the Mistlands requires placing doz
 Cosmetic customization for the player-equipped **Wisplight** utility accessory (the flying follower orb, referenced internally and in config as `Demister` / `demister_ball`):
 
 * **Custom Color**: Choose your Wisplight color via `DemisterColor` in the Configuration Manager (F1) or config file.
-* **Point Light & Emission Multipliers**: Scale the Wisplight's point light intensity (`DemisterLightIntensityMultiplier`, 0.1×–5.0×) and core shader emission brightness (`DemisterEmissionIntensityMultiplier`, 0.1×–5.0×) independently.
+* **Point Light & Emission Multipliers**: Scale the Wisplight's point light intensity (`DemisterLightIntensityMultiplier`, 0.1x to 5.0x) and core shader emission brightness (`DemisterEmissionIntensityMultiplier`, 0.1x to 5.0x) independently.
 * **Alpha Transparency**: Optional transparency for your Wisplight via `DemisterEnableAlpha`. Clamped to a 15% minimum to prevent invisibility.
-* **Idle Hover Speed & Radius Multipliers**: Calms and smooths the Wisplight's idle animation (`DemisterIdleSpeedMultiplier`, 0.0–2.0) and wander radius (`DemisterIdleRadiusMultiplier`, 0.0–2.0) to eliminate rapid fly-like buzzing and jittering around your head.
+* **Idle Hover Speed & Radius Multipliers**: Calms and smooths the Wisplight's idle animation (`DemisterIdleSpeedMultiplier`, 0.0 to 2.0) and wander radius (`DemisterIdleRadiusMultiplier`, 0.0 to 2.0) to eliminate rapid fly-like buzzing and jittering around your head.
 * **Multiplayer Color Sync**: When enabled (`DemisterSyncMultiplayer`), your Wisplight color is written to the follower orb's ZDO (`wisptorch_demister_color`) and visible to other players running the mod.
-* **Intensity Multipliers Are Client-Local**: Your light and emission intensity settings stay strictly local—other players' Wisplights always render on your screen at default calibrated brightness.
+* **Intensity Multipliers Are Client-Local**: Your light and emission intensity settings stay strictly local; other players' Wisplights always render on your screen at default calibrated brightness.
 * **Strictly Cosmetic**: Does not alter mist suppression radius, clearance force fields, or Wisplight equipment stats.
 
 ---
@@ -180,11 +179,11 @@ Settings can be customized directly in-game using the BepInEx **Configuration Ma
 ## Installation
 
 > [!TIP]
-> **Mod Manager Recommended:** Using a modern mod manager like **Gale** or **Thunderstore** makes installation and automatic dependency updates effortless.
+> **Mod Manager Recommended:** Using a modern mod manager like **Gale** or **Thunderstore** handles installation and dependency updates automatically.
 
 ### Mod Manager (Recommended)
 1. Install via **Gale**, **Thunderstore Mod Manager**, or **r2modman**.
-2. Launch Valheim and enjoy!
+2. Launch Valheim.
 
 ### Manual Installation
 1. Ensure **BepInExPack Valheim** and **Jötunn (the Valheim Modding Library)** are installed.
@@ -205,28 +204,21 @@ dotnet build -c Release
 The compiled assembly will be placed in `bin/Release/net48/WispTorchHeeler.dll`. Building in `Release` configuration also automatically packages the distribution ZIP to `bin/Publish/WispTorchHeeler-<Version>.zip`.
 
 ### Custom & CI Paths
-For non-standard Steam library locations or mod manager profiles, copy `WispTorchHeeler.csproj.user.example` to `WispTorchHeeler.csproj.user` in the project root (this file is git-ignored and automatically loaded by MSBuild):
+For custom installations, non-standard Steam paths, or mod manager profiles, copy [`Environment.props.example`](Environment.props.example) to `Environment.props` in the project root to configure your paths:
+- `VALHEIM_INSTALL`: Root Valheim installation folder.
+- `BEPINEX_PATH`: Root BepInEx folder (containing `core`, `plugins`, etc.).
 
-```xml
-<?xml version="1.0" encoding="utf-8"?>
-<Project>
-  <PropertyGroup>
-    <GamePath>D:\SteamLibrary\steamapps\common\Valheim</GamePath>
-    <BepInExCorePath>$(UserProfile)\AppData\Roaming\com.kesomannen.gale\valheim\profiles\<ProfileName>\BepInEx\core</BepInExCorePath>
-  </PropertyGroup>
-</Project>
-```
-
+Alternatively, you can set `VALHEIM_INSTALL` and `BEPINEX_PATH` as environment variables.
 ---
 
 ## Packaging, Publishing & Releases
 
-All developer automation tools for release management, packaging, and publishing to **Thunderstore**, **Hexium**, and **Nexus Mods** are consolidated into the single PowerShell 7 entrypoint [.scripts/modtools.ps1](.scripts/modtools.ps1), powered by the shared [**DW.ValheimModTools**](https://github.com/DreamWraith/DW-ValheimModTools) module:
+All developer automation tools for release management, packaging, and publishing to **Thunderstore** and **Nexus Mods** are consolidated into the single PowerShell 7 entrypoint [.scripts/modtools.ps1](.scripts/modtools.ps1), powered by the shared [**DW.ValheimModTools**](https://github.com/DreamWraith/DW-ValheimModTools) module:
 
 - **Release Management**: pwsh ./.scripts/modtools.ps1 release compiles in Release, creates mod & source archives, extracts changelog notes, and publishes GitHub Releases (Draft by default, or published with -Publish) using the gh CLI.
 - **Packaging & Version Bumping**: pwsh ./.scripts/modtools.ps1 package -Bump Patch increments SemVer in WispTorchHeeler.csproj, updates manifest.json, and bundles distribution archives.
-- **Portal Publishing**: pwsh ./.scripts/modtools.ps1 publish -Target All uploads directly to Thunderstore, Hexium, and Nexus Mods APIs.
-- **CI/CD Workflow**: [.github/workflows/publish.yml](.github/workflows/publish.yml) provides an automated GitHub Actions workflow to publish to Thunderstore, Hexium, and Nexus Mods whenever a GitHub Release is published.
+- **Portal Publishing**: pwsh ./.scripts/modtools.ps1 publish -Target All uploads directly to Thunderstore and Nexus Mods APIs.
+- **CI/CD Workflow**: [.github/workflows/publish.yml](.github/workflows/publish.yml) provides an automated GitHub Actions workflow to publish to Thunderstore and Nexus Mods whenever a GitHub Release is published.
 
 For detailed documentation on flags, workflows, and secret configuration, see [.scripts/README.md](.scripts/README.md).
 

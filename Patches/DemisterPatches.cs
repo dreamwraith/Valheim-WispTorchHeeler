@@ -19,19 +19,18 @@ namespace WispTorchHeeler.Patches
             [HarmonyPostfix]
             public static void Postfix(ZNetView __instance)
             {
-                if (!ModConfig.EnableMod.Value || __instance == null || !__instance.IsValid())
+                if (!ModConfig.EnableMod.Value || !__instance || !__instance.IsValid())
                 {
                     return;
                 }
 
-                // Zero-allocation integer hash check filters out 99.99% of network entities instantly.
-                // Guard with GetComponentInChildren<Demister> ensures only true demister balls are modified.
-                if (__instance.GetZDO().GetPrefab() != s_demisterBallHash || __instance.GetComponentInChildren<Demister>(true) == null)
+                var demister = __instance.GetComponentInChildren<Demister>(true);
+                if (__instance.GetZDO().GetPrefab() != s_demisterBallHash || !demister)
                 {
                     return;
                 }
 
-                if (__instance.GetComponent<WispDemisterColorController>() == null)
+                if (!__instance.TryGetComponent<WispDemisterColorController>(out _))
                 {
                     __instance.gameObject.AddComponent<WispDemisterColorController>();
                     Plugin.LogDebug($"[DemisterPatch] Attached WispDemisterColorController to networked Wisplight '{__instance.name}'.");

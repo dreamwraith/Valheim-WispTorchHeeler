@@ -5,6 +5,14 @@ All notable changes to **WispTorchHeeler** will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-10-19
+
+### Changed
+- Switch to compile-time publicized game assemblies via Jötunn prebuild task (`DoPrebuild.props`, `JotunnLib`).
+- Removed legacy manual references to Jötunn assembly DLL in favor of package-managed dependencies.
+- Remove Hexium publish target and tooling.
+- Cleaned up component lookups with native `TryGetComponent` and simplified Unity null checks.
+
 ## [1.2.2] - 2026-10-08
 
 ### Changed
@@ -89,4 +97,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Zero Asset Bundles**:
   - Clones and configures native Valheim game prefabs at runtime using Jötunn, ensuring instant loading, zero asset bloat, and full compatibility.
 - **Build & Distribution Automation**:
-  - Portable MSBuild configuration with automated Thunderstore/Hexium release ZIP packaging.
+  - Portable MSBuild configuration with automated Thunderstore release ZIP packaging.

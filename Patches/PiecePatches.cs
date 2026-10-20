@@ -35,7 +35,7 @@ namespace WispTorchHeeler.Patches
                     return;
                 }
 
-                if (__instance.gameObject.GetComponent<WispTorchColorController>() == null)
+                if (!__instance.gameObject.TryGetComponent<WispTorchColorController>(out _))
                 {
                     __instance.gameObject.AddComponent<WispTorchColorController>();
                     Plugin.LogDebug($"[PiecePatch] Injected WispTorchColorController into spawned '{prefabName}'.");
@@ -58,7 +58,7 @@ namespace WispTorchHeeler.Patches
                     return;
                 }
 
-                if (__instance == null)
+                if (!__instance)
                 {
                     return;
                 }
@@ -66,7 +66,7 @@ namespace WispTorchHeeler.Patches
                 var controller = __instance.GetComponentInParent<WispTorchColorController>()
                               ?? __instance.GetComponentInChildren<WispTorchColorController>();
 
-                if (controller == null)
+                if (!controller)
                 {
                     return;
                 }
