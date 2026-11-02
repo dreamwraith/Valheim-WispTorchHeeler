@@ -124,7 +124,7 @@ namespace WispTorchHeeler.Configuration
                 new AcceptableValueRange<float>(1.0f, 5000.0f));
 
             Torch_CraftingStation = BindSynced(config, "2 - Large Torch", "Torch_CraftingStation", "",
-                "Required station formatted as StationPrefab (e.g. piece_workbench, piece_forge, or \"\" for freeform hammer placement).");
+                "Required station formatted as StationPrefab (e.g. piece_workbench, forge, or \"\" for freeform hammer placement).");
 
             Torch_Recipe = BindSynced(config, "2 - Large Torch", "Torch_Recipe", "Wisp:8,YggdrasilWood:5,Sap:1",
                 "Crafting recipe string formatted as ItemPrefab:Amount,... parsed against ObjectDB.",
@@ -250,7 +250,7 @@ namespace WispTorchHeeler.Configuration
 
             // 9 - Worn Demister
             EnableDemisterCustomization = BindSynced(config, "9 - Worn Demister", "EnableDemisterCustomization", true,
-                "Enables cosmetic customization of color, lighting, and emissive properties for your body-worn Demister wisplight accessory.");
+                "Enables cosmetic customization of color, lighting, emissive properties, and idle motion for your body-worn Demister wisplight accessory.");
 
             DemisterSyncMultiplayer = BindSynced(config, "9 - Worn Demister", "DemisterSyncMultiplayer", true,
                 "Broadcasts your demister color to your wisplight follower orb ZDO so other players with this mod see your custom demister color.");

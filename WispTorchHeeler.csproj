@@ -11,9 +11,9 @@
     <Version>1.3.0</Version>
     <PackageWebsiteUrl>https://github.com/dreamwraith/Valheim-WispTorchHeeler</PackageWebsiteUrl>
     <PackageDescription>Tiered Mistlands wisp torches and lamps with expanded mist clearance, interactive torch painting, body-worn Wisplight customization, and multiplayer color synchronization.</PackageDescription>
-    <Authors>dreamwraith</Authors>
-    <Company>dreamwraith (https://github.com/dreamwraith)</Company>
-    <Copyright>Copyright (c) 2026 dreamwraith</Copyright>
+    <Authors>DreamWraith</Authors>
+    <Company>DreamWraith (https://github.com/dreamwraith)</Company>
+    <Copyright>Copyright (c) 2026 DreamWraith</Copyright>
     <Description>$(PackageDescription)</Description>
     <PackageProjectUrl>https://github.com/dreamwraith/Valheim-WispTorchHeeler</PackageProjectUrl>
     <RepositoryUrl>https://github.com/dreamwraith/Valheim-WispTorchHeeler</RepositoryUrl>
