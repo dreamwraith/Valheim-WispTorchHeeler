@@ -5,6 +5,21 @@ All notable changes to **WispTorchHeeler** will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2026-11-01
+
+### Fixed
+- **Rain Damage**: Torches and lamps don't take rain damage anymore.
+  - *note: Apparently Iron Gate loves confusing variable names, and I made a mistake on whether no means no.*
+
+### Changed
+- `EnableDemisterCustomization` is client-controlled by default now. Admins can force it with ConditionalConfigSync policy files.
+- Config reloads live when you edit the file, and server changes push to connected players.
+- Dedicated servers only load the pieces and synced settings now.
+- Small performance fix for the wisplight patch.
+- Fixed a couple config descriptions that drifted during dev (`EnableDemisterCustomization` and the crafting station ones).
+- Bumped ConditionalConfigSync to 1.0.11 and BepInExPack to 5.4.2360. Server and clients need matching versions of this mod.
+- Build tooling and source layout now match the rest of my mods.
+
 ## [1.3.0] - 2026-10-19
 
 ### Changed
