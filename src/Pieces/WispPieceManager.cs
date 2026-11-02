@@ -341,7 +341,9 @@ namespace WispTorchHeeler.Pieces
             {
                 wearNTear = clonedGameObject.AddComponent<WearNTear>();
             }
-            wearNTear.m_noRoofWear = true;
+            // why the actual fuck iron gate used this name idk, but m_noRoofWear = false means it won't decay from weather
+            // and m_noSupportWear = true means it won't decay from lack of support
+            wearNTear.m_noRoofWear = false;
             wearNTear.m_noSupportWear = true;
 
             // Configure hit and destruction sounds if an override source is specified
