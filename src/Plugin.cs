@@ -3,6 +3,8 @@ using System.Reflection;
 using BepInEx;
 using BepInEx.Logging;
 using HarmonyLib;
+using Jotunn.Managers;
+using Jotunn.Utils;
 using WispTorchHeeler.Configuration;
 using WispTorchHeeler.Lighting;
 using WispTorchHeeler.Localization;
@@ -31,6 +33,7 @@ namespace WispTorchHeeler
 
             // 1. Initialize configuration and ConditionalConfigSync
             ModConfig.Initialize(Config);
+            new ConfigFileWatcher(Config);
 
             if (!ModConfig.EnableMod.Value)
             {
@@ -38,17 +41,27 @@ namespace WispTorchHeeler
                 return;
             }
 
-            // 2. Register localizations via standalone module
-            ModLocalization.Initialize();
-
-            // 3. Initialize custom pieces and prefabs
+            // 2. Initialize custom pieces and prefabs
             WispPieceManager.Initialize();
 
-            // 4. Initialize lighting and demister controllers
+            // servers only need the pieces and synced settings
+            if (GUIManager.IsHeadless())
+            {
+                enabled = false;
+                return;
+            }
+
+            // 3. Register localizations via standalone module
+            ModLocalization.Initialize();
+
+            // 4. Register buttons into Valheim's native ZInput via Jotunn InputManager
+            ModConfig.RegisterInputButtons();
+
+            // 5. Initialize lighting and demister controllers
             WispTorchColorController.Initialize();
             WispDemisterColorController.Initialize();
 
-            // 5. Apply Harmony patches
+            // 6. Apply Harmony patches
             _harmony = Harmony.CreateAndPatchAll(Assembly.GetExecutingAssembly(), ModGUID);
 
             Log.LogInfo($"{ModName} v{ModVersion} loaded successfully.");

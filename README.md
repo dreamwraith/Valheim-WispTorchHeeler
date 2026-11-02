@@ -116,7 +116,7 @@ Cosmetic customization for the player-equipped **Wisplight** utility accessory (
 
 Settings can be customized directly in-game using the BepInEx **Configuration Manager** (`F1`, installed separately) or by editing `BepInEx/config/dreamwraith.WispTorchHeeler.cfg`.
 
-On a server, sections 1 to 6 plus `EnableDemisterCustomization` and `DemisterSyncMultiplayer` are synced from the server. All other settings stay under each player's control.
+On a server, sections 1 to 6 plus `DemisterSyncMultiplayer` are synced from the server. `EnableDemisterCustomization` stays under each player's control unless a server policy file forces it. All other settings stay under each player's control.
 
 Leave a station empty to allow building anywhere. An unknown station name logs a warning and also removes the station requirement. An invalid recipe is ignored: at startup the default is used and an error is logged, and a live edit keeps the previous recipe. Recipe, station, and piece stat changes apply live to placed pieces.
 
@@ -162,7 +162,7 @@ Leave a station empty to allow building anywhere. An unknown station name logs a
 | `8 - Torch Painter` | `PainterRaycastDistance` | `float` | `10.0` | Maximum distance in meters to aim and paint a piece (2.0 - 25.0). |
 | `8 - Torch Painter` | `ShowPainterFeedback` | `bool` | `true` | Shows on-screen HUD text confirmations upon painting/resetting. |
 | `8 - Torch Painter` | `AutoPaintOnPlacement` | `bool` | `false` | If true, newly placed torches and lamps are automatically painted with your active PainterColor upon placement. |
-| `9 - Worn Demister` | `EnableDemisterCustomization` | `bool` | `true` | Server-synced. Enables cosmetic customization of color, lighting, emissive properties, and idle motion for your equipped Wisplight accessory. |
+| `9 - Worn Demister` | `EnableDemisterCustomization` | `bool` | `true` | Enables cosmetic customization of color, lighting, emissive properties, and idle motion for your equipped Wisplight accessory. |
 | `9 - Worn Demister` | `DemisterSyncMultiplayer` | `bool` | `true` | Server-synced. Broadcasts your Wisplight color to your follower orb ZDO so other players with this mod see your custom color. |
 | `9 - Worn Demister` | `DemisterColor` | `Color` | `#B4F0FF` | Active cosmetic color for your Wisplight, particles, and emissive glow. |
 | `9 - Worn Demister` | `DemisterLightIntensityMultiplier` | `float` | `1.0` | Multiplier scaling the brightness of the point light emitted by your Wisplight (0.1 - 5.0). |

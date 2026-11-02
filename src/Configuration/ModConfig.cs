@@ -245,12 +245,10 @@ namespace WispTorchHeeler.Configuration
             AutoPaintOnPlacement = BindClient(config, "8 - Torch Painter", "AutoPaintOnPlacement", false,
                 "If true, newly placed torches and lamps are automatically painted with your active PainterColor upon placement.");
 
-            // Register buttons into Valheim's native ZInput via Jotunn InputManager
-            RegisterInputButtons();
-
             // 9 - Worn Demister
-            EnableDemisterCustomization = BindSynced(config, "9 - Worn Demister", "EnableDemisterCustomization", true,
+            EnableDemisterCustomization = BindClient(config, "9 - Worn Demister", "EnableDemisterCustomization", true,
                 "Enables cosmetic customization of color, lighting, emissive properties, and idle motion for your body-worn Demister wisplight accessory.");
+            ConfigSync.AddConfigEntry(EnableDemisterCustomization, false);
 
             DemisterSyncMultiplayer = BindSynced(config, "9 - Worn Demister", "DemisterSyncMultiplayer", true,
                 "Broadcasts your demister color to your wisplight follower orb ZDO so other players with this mod see your custom demister color.");
@@ -290,7 +288,7 @@ namespace WispTorchHeeler.Configuration
         public const string ButtonPaint = "WTH_Paint";
         public const string ButtonReset = "WTH_Reset";
 
-        private static void RegisterInputButtons()
+        public static void RegisterInputButtons()
         {
             try
             {

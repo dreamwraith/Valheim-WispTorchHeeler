@@ -24,8 +24,13 @@ namespace WispTorchHeeler.Patches
                     return;
                 }
 
-                var demister = __instance.GetComponentInChildren<Demister>(true);
-                if (__instance.GetZDO().GetPrefab() != s_demisterBallHash || !demister)
+                if (__instance.GetZDO().GetPrefab() != s_demisterBallHash)
+                {
+                    return;
+                }
+
+                Demister demister = __instance.GetComponentInChildren<Demister>(true);
+                if (!demister)
                 {
                     return;
                 }
