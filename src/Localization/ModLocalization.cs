@@ -1,16 +1,12 @@
 using System;
 using System.Collections.Generic;
+using Jotunn.Entities;
 using Jotunn.Managers;
 
 namespace WispTorchHeeler.Localization
 {
-    /// <summary>
-    /// Standalone localization module managing built-in tokens and custom translation files.
-    /// Allows easy expansion for community language packs (.json / .yaml).
-    /// </summary>
     public static class ModLocalization
     {
-        // Custom Piece Tokens
         public const string TokenPieceTorchLg = "$piece_wisptorch_heeler_lg";
         public const string TokenPieceTorchLgDesc = "$piece_wisptorch_heeler_lg_description";
         public const string TokenPieceSmallLamp = "$piece_wisplamp_heeler";
@@ -20,21 +16,18 @@ namespace WispTorchHeeler.Localization
         public const string TokenPieceLampGrand = "$piece_wisplamp_heeler_grand";
         public const string TokenPieceLampGrandDesc = "$piece_wisplamp_heeler_grand_description";
 
-        // In-Game Notification & Feedback Tokens
         public const string TokenMsgPainted = "$msg_torch_painted";
         public const string TokenMsgReset = "$msg_torch_reset";
         public const string TokenMsgCantPaintWarded = "$msg_cantpaint_warded";
         public const string TokenMsgCantPaintDisabled = "$msg_cantpaint_disabled";
 
-        // Hover Indicator Prompt Tokens
         public const string TokenPromptPaint = "$prompt_torch_paint";
         public const string TokenPromptReset = "$prompt_torch_reset";
 
         public static void Initialize()
         {
-            var customLocalization = LocalizationManager.Instance.GetLocalization();
+            CustomLocalization customLocalization = LocalizationManager.Instance.GetLocalization();
 
-            // English Translations via standard Jotunn Dictionary
             customLocalization.AddTranslation("English", new Dictionary<string, string>
             {
                 { TokenPieceTorchLg, "Large Wisp Torch" },
@@ -56,9 +49,6 @@ namespace WispTorchHeeler.Localization
             Plugin.LogDebug("[ModLocalization] Default English localizations registered.");
         }
 
-        /// <summary>
-        /// Translates a given token key using Jotunn's CustomLocalization.
-        /// </summary>
         public static string Localize(string token, params string[] arguments)
         {
             string translatedText = LocalizationManager.Instance.GetLocalization().TryTranslate(token);

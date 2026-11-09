@@ -71,19 +71,19 @@ namespace WispTorchHeeler.Configuration
         public static ConfigEntry<bool> DemisterSyncMultiplayer = null!;
         public static ConfigEntry<Color> DemisterColor = null!;
         public static ConfigEntry<float> DemisterLightIntensityMultiplier = null!;
+        public static ConfigEntry<float> DemisterLightRangeMultiplier = null!;
         public static ConfigEntry<float> DemisterEmissionIntensityMultiplier = null!;
         public static ConfigEntry<bool> DemisterEnableAlpha = null!;
         public static ConfigEntry<float> DemisterIdleSpeedMultiplier = null!;
         public static ConfigEntry<float> DemisterIdleRadiusMultiplier = null!;
+        public static ConfigEntry<WornDemisterMount> DemisterMountStyle = null!;
 
         // 10 - Debug
         public static ConfigEntry<bool> EnableDebugLogs = null!;
         public static ConfigEntry<bool> ShowMistSuppressionRadius = null!;
 
-        // Standard cyan/white Mistlands fallback: #B4F0FF -> RGBA(0.706, 0.941, 1.0, 1.0)
-        private static readonly Color s_defaultCyan = new Color(0.706f, 0.941f, 1.0f, 1.0f);
-        // Standard painter orange: #FF8800 -> RGBA(1.0, 0.533, 0.0, 1.0)
-        private static readonly Color s_defaultOrange = new Color(1.0f, 0.533f, 0.0f, 1.0f);
+        private static readonly Color s_defaultCyan = new Color(0.706f, 0.941f, 1.0f, 1.0f); // #B4F0FF
+        private static readonly Color s_defaultOrange = new Color(1.0f, 0.533f, 0.0f, 1.0f); // #FF8800
 
         public static void Initialize(ConfigFile config)
         {
@@ -95,7 +95,6 @@ namespace WispTorchHeeler.Configuration
                 ModRequired = true
             };
 
-            // 1 - General
             EnableMod = BindSynced(config, "1 - General", "EnableMod (Requires Restart)", true,
                 "Master switch to enable or disable the functionality of this mod. (Requires Restart)");
 
@@ -106,7 +105,6 @@ namespace WispTorchHeeler.Configuration
                 "Additive bonus percentage (0.0 to 1.0) scaling PlayerBase spawn suppression from a baseline of 20.0m toward active mist clearance radius. At 0.0, all custom pieces use the 20.0m baseline. At 1.0, the suppression radius matches the active mist reveal boundary. Note: higher values reduce native spawn balance in favor of mist sanctuary.",
                 new AcceptableValueRange<float>(0.0f, 1.0f));
 
-            // 2 - Large Torch
             Torch_MistClearRangeMultiplier = BindSynced(config, "2 - Large Torch", "Torch_MistClearRangeMultiplier", 1.5f,
                 "Large torch mist clearance radius multiplier (relative to 24.0m baseline, range: 1.0 - 10.0).",
                 new AcceptableValueRange<float>(1.0f, 10.0f));
@@ -130,7 +128,6 @@ namespace WispTorchHeeler.Configuration
                 "Crafting recipe string formatted as ItemPrefab:Amount,... parsed against ObjectDB.",
                 customDrawer: RecipeConfigDrawer.Draw);
 
-            // 3 - Small Lamp
             SmallLamp_MistClearRangeMultiplier = BindSynced(config, "3 - Small Lamp", "SmallLamp_MistClearRangeMultiplier", 2.25f,
                 "Tier 2 small lamp mist clearance radius multiplier (relative to 24.0m baseline, range: 1.0 - 10.0).",
                 new AcceptableValueRange<float>(1.0f, 10.0f));
@@ -154,7 +151,6 @@ namespace WispTorchHeeler.Configuration
                 "Crafting recipe string formatted as ItemPrefab:Amount,... parsed against ObjectDB.",
                 customDrawer: RecipeConfigDrawer.Draw);
 
-            // 4 - Large Lamp
             LargeLamp_MistClearRangeMultiplier = BindSynced(config, "4 - Large Lamp", "LargeLamp_MistClearRangeMultiplier", 3.0f,
                 "Tier 3 lamp mist clearance radius multiplier (relative to 24.0m baseline, range: 1.0 - 15.0).",
                 new AcceptableValueRange<float>(1.0f, 15.0f));
@@ -178,7 +174,6 @@ namespace WispTorchHeeler.Configuration
                 "Crafting recipe string formatted as ItemPrefab:Amount,... parsed against ObjectDB.",
                 customDrawer: RecipeConfigDrawer.Draw);
 
-            // 5 - Grand Lamp
             GrandLamp_MistClearRangeMultiplier = BindSynced(config, "5 - Grand Lamp", "GrandLamp_MistClearRangeMultiplier", 3.75f,
                 "Tier 4 grand lamp mist clearance radius multiplier (relative to 24.0m baseline, range: 1.0 - 15.0).",
                 new AcceptableValueRange<float>(1.0f, 15.0f));
@@ -202,7 +197,6 @@ namespace WispTorchHeeler.Configuration
                 "Crafting recipe string formatted as ItemPrefab:Amount,... parsed against ObjectDB.",
                 customDrawer: RecipeConfigDrawer.Draw);
 
-            // 6 - Lighting Policy
             EnforceServerDefaultColor = BindSynced(config, "6 - Lighting Policy", "EnforceServerDefaultColor", false,
                 "If true, all clients must render unpainted pieces with the server's default color.");
 
@@ -221,11 +215,9 @@ namespace WispTorchHeeler.Configuration
             EnableAlphaCustomization = BindSynced(config, "6 - Lighting Policy", "EnableAlphaCustomization", false,
                 "Allows customizing light and particle transparency using the alpha slider in the color picker. When disabled, native opacity is strictly preserved. Alpha is safely clamped to a minimum of 15% to prevent pieces from becoming invisible.");
 
-            // 7 - Client Lighting
             DefaultLightColor = BindClient(config, "7 - Client Lighting", "DefaultLightColor", s_defaultCyan,
                 "Client's personal default color for unpainted pieces (active when server does not enforce).");
 
-            // 8 - Torch Painter
             PainterColor = BindClient(config, "8 - Torch Painter", "PainterColor", s_defaultOrange,
                 "Active paint color selected by player via UI color picker drawer.");
 
@@ -245,7 +237,6 @@ namespace WispTorchHeeler.Configuration
             AutoPaintOnPlacement = BindClient(config, "8 - Torch Painter", "AutoPaintOnPlacement", false,
                 "If true, newly placed torches and lamps are automatically painted with your active PainterColor upon placement.");
 
-            // 9 - Worn Demister
             EnableDemisterCustomization = BindClient(config, "9 - Worn Demister", "EnableDemisterCustomization", true,
                 "Enables cosmetic customization of color, lighting, emissive properties, and idle motion for your body-worn Demister wisplight accessory.");
             ConfigSync.AddConfigEntry(EnableDemisterCustomization, false);
@@ -258,6 +249,10 @@ namespace WispTorchHeeler.Configuration
 
             DemisterLightIntensityMultiplier = BindClient(config, "9 - Worn Demister", "DemisterLightIntensityMultiplier", 1.0f,
                 "Multiplier scaling the brightness of the point light emitted by your body-worn Demister (0.1 - 5.0).",
+                new AcceptableValueRange<float>(0.1f, 5.0f));
+
+            DemisterLightRangeMultiplier = BindClient(config, "9 - Worn Demister", "DemisterLightRangeMultiplier", 1.0f,
+                "Multiplier scaling the range radius of the point light emitted by your body-worn Demister (0.1 - 5.0). The base game range is 10 m for the orb and 8 m for the cage.",
                 new AcceptableValueRange<float>(0.1f, 5.0f));
 
             DemisterEmissionIntensityMultiplier = BindClient(config, "9 - Worn Demister", "DemisterEmissionIntensityMultiplier", 1.0f,
@@ -275,7 +270,10 @@ namespace WispTorchHeeler.Configuration
                 "Multiplier scaling the hover and jitter distance of your equipped Wisplight follower orb around your head (0.0 - 2.0). Lower values keep the orb closer to your shoulder; 1.0 is native Valheim distance.",
                 new AcceptableValueRange<float>(0.0f, 2.0f));
 
-            // 10 - Debug
+            DemisterMountStyle = BindClient(config, "9 - Worn Demister", "DemisterMountStyle", WornDemisterMount.Floating,
+                "Sets how your body-worn Demister is carried. Floating keeps the base game follower orb. HipOrb shows a still orb on your hip. HipCage shows a caged lantern on your hip. Both hip styles move the mist clearance center to your hip and use a brighter light to make up for the lower position. Other players see the selected style only if they have this mod with EnableDemisterCustomization enabled. All other players see the base game orb at your hip.");
+            ConfigSync.AddConfigEntry(DemisterMountStyle, false);
+
             EnableDebugLogs = BindClient(config, "10 - Debug", "EnableDebugLogs", false,
                 "Enables verbose diagnostic logging in the BepInEx console.");
 
@@ -320,17 +318,17 @@ namespace WispTorchHeeler.Configuration
 
         private static ConfigEntry<T> BindSynced<T>(ConfigFile config, string section, string key, T defaultValue, string description, AcceptableValueBase? acceptableValues = null, Action<ConfigEntryBase>? customDrawer = null)
         {
-            var configDescription = customDrawer != null
+            ConfigDescription configDescription = customDrawer != null
                 ? new ConfigDescription(description, acceptableValues, new ConfigurationManagerAttributes { CustomDrawer = customDrawer })
                 : new ConfigDescription(description, acceptableValues);
-            var entry = config.Bind(section, key, defaultValue, configDescription);
+            ConfigEntry<T> entry = config.Bind(section, key, defaultValue, configDescription);
             ConfigSync.AddConfigEntry(entry);
             return entry;
         }
 
         private static ConfigEntry<T> BindClient<T>(ConfigFile config, string section, string key, T defaultValue, string description, AcceptableValueBase? acceptableValues = null, Action<ConfigEntryBase>? customDrawer = null)
         {
-            var configDescription = customDrawer != null
+            ConfigDescription configDescription = customDrawer != null
                 ? new ConfigDescription(description, acceptableValues, new ConfigurationManagerAttributes { CustomDrawer = customDrawer })
                 : new ConfigDescription(description, acceptableValues);
             return config.Bind(section, key, defaultValue, configDescription);

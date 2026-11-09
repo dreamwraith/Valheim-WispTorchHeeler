@@ -10,6 +10,7 @@ namespace WispTorchHeeler.Painter
     public static class TorchPainter
     {
         private static int s_baseRaycastMask = -1;
+        private static readonly string[] s_feedbackPrefabNames = { "sfx_wisp_spawn", "vfx_wisp_spawn", "sfx_build_hammer_metal" };
 
         private static int GetBaseRaycastMask()
         {
@@ -20,12 +21,7 @@ namespace WispTorchHeeler.Painter
             return s_baseRaycastMask;
         }
 
-        /// <summary>
-        /// Attempts to paint or reset the currently hovered or targeted torch.
-        /// Hybrid approach:
-        /// 1. Taps directly into Player.m_localPlayer.m_hovering (zero raycast overhead if already looking at piece).
-        /// 2. Falls back to a camera raycast up to PainterRaycastDistance if targeting a distant torch beyond interact range.
-        /// </summary>
+        // hover targets come free since the game already raycast for them, the extra raycasts only run for torches past interact range
         public static void TryPaintOrReset(bool isReset)
         {
             if (!ModConfig.EnableMod.Value)
@@ -34,91 +30,83 @@ namespace WispTorchHeeler.Painter
             }
 
             Player localPlayer = Player.m_localPlayer;
-            if (localPlayer == null)
+            if (!localPlayer)
             {
                 return;
             }
 
             WispTorchColorController? targetController = null;
 
-            // Step 1: Check existing hover object from Valheim's native hover loop
-            if (localPlayer.m_hovering != null)
+            if (localPlayer.m_hovering)
             {
                 targetController = ResolveControllerFromObject(localPlayer.m_hovering);
-                if (targetController != null)
+                if (targetController)
                 {
                     Plugin.LogDebug($"[TorchPainter] Targeted torch via native hover: '{targetController.gameObject.name}'.");
                 }
             }
 
-            // Step 2: Check hovered piece (active when holding building hammer or aiming at pieces)
-            if (targetController == null && localPlayer.m_hoveringPiece != null)
+            if (!targetController && localPlayer.m_hoveringPiece)
             {
                 targetController = ResolveControllerFromObject(localPlayer.m_hoveringPiece.gameObject);
-                if (targetController != null)
+                if (targetController)
                 {
                     Plugin.LogDebug($"[TorchPainter] Targeted torch via hovering piece: '{targetController.gameObject.name}'.");
                 }
             }
 
-            // Step 3: If no hovered torch, fall back to camera raycast and eye raycast up to PainterRaycastDistance
-            if (targetController == null)
+            if (!targetController)
             {
                 float maxDistance = ModConfig.PainterRaycastDistance.Value;
                 int layerMask = GetBaseRaycastMask() | localPlayer.m_interactMask;
 
-                Camera? activeCamera = GameCamera.instance != null && GameCamera.instance.m_camera != null
+                Camera? activeCamera = GameCamera.instance && GameCamera.instance.m_camera
                     ? GameCamera.instance.m_camera
-                    : (Camera.main != null ? Camera.main : (GameCamera.instance != null ? GameCamera.instance.GetComponent<Camera>() : null));
+                    : (Camera.main ? Camera.main : (GameCamera.instance ? GameCamera.instance.GetComponent<Camera>() : null));
 
-                // Try center camera ray first
-                if (activeCamera != null)
+                if (activeCamera)
                 {
                     Ray cameraRay = new Ray(activeCamera.transform.position, activeCamera.transform.forward);
                     targetController = RaycastForController(cameraRay, maxDistance, layerMask);
                 }
 
-                // Fall back to eye-level look ray
-                if (targetController == null)
+                if (!targetController)
                 {
                     Ray eyeRay = new Ray(localPlayer.GetEyePoint(), localPlayer.GetLookDir());
                     targetController = RaycastForController(eyeRay, maxDistance, layerMask);
                 }
             }
 
-            if (targetController == null)
+            if (!targetController)
             {
                 Plugin.LogDebug("[TorchPainter] No valid wisp torch/lamp targeted.");
                 return;
             }
 
             string prefabName = Utils.GetPrefabName(targetController.gameObject);
-            if (prefabName == Pieces.WispPieceManager.NativeMistTorchPrefab && (ModConfig.AffectNativeMistTorches == null || !ModConfig.AffectNativeMistTorches.Value))
+            if (prefabName == Pieces.WispPieceManager.NativeMistTorchPrefab && !ModConfig.AffectNativeMistTorches.Value)
             {
                 Plugin.LogDebug("[TorchPainter] Painting native mist torches is disabled in config.");
                 return;
             }
 
-            // Security Check 1: Master Server Switch
             if (!ModConfig.AllowTorchPainting.Value)
             {
                 Plugin.LogDebug("[TorchPainter] Painting is globally disabled by server policy.");
-                if (MessageHud.instance != null)
+                if (MessageHud.instance)
                 {
                     MessageHud.instance.ShowMessage(MessageHud.MessageType.Center, ModLocalization.Localize(ModLocalization.TokenMsgCantPaintDisabled));
                 }
                 return;
             }
 
-            // Security Check 2: Ward Protection
             Vector3 targetPosition = targetController.transform.position;
             if (!ModConfig.AllowPaintingInProtectedWards.Value)
             {
                 bool hasAccess = PrivateArea.CheckAccess(targetPosition, 0f, true);
                 if (!hasAccess)
                 {
-                    bool isAdmin = (ModConfig.ConfigSync != null && ModConfig.ConfigSync.IsAdmin)
-                        || (SynchronizationManager.Instance != null && SynchronizationManager.Instance.PlayerIsAdmin);
+                    bool isAdmin = ModConfig.ConfigSync.IsAdmin || SynchronizationManager.Instance.PlayerIsAdmin;
 
                     if (ModConfig.AdminBypassesWardCheck.Value && isAdmin)
                     {
@@ -127,7 +115,7 @@ namespace WispTorchHeeler.Painter
                     else
                     {
                         Plugin.LogDebug("[TorchPainter] Ward access denied. Painting blocked.");
-                        if (MessageHud.instance != null)
+                        if (MessageHud.instance)
                         {
                             MessageHud.instance.ShowMessage(MessageHud.MessageType.Center, ModLocalization.Localize(ModLocalization.TokenMsgCantPaintWarded));
                         }
@@ -136,8 +124,8 @@ namespace WispTorchHeeler.Painter
                 }
             }
 
-            var netView = targetController.GetComponent<ZNetView>();
-            if (netView == null || !netView.IsValid())
+            ZNetView netView = targetController.GetComponent<ZNetView>();
+            if (!netView || !netView.IsValid())
             {
                 Plugin.Log.LogWarning("[TorchPainter] Target piece has no valid ZNetView.");
                 return;
@@ -155,7 +143,7 @@ namespace WispTorchHeeler.Painter
             else
             {
                 Color activeColor = ModConfig.PainterColor.Value;
-                bool allowAlpha = ModConfig.EnableAlphaCustomization != null && ModConfig.EnableAlphaCustomization.Value;
+                bool allowAlpha = ModConfig.EnableAlphaCustomization.Value;
                 activeColor.a = allowAlpha
                     ? Mathf.Clamp(activeColor.a, WispTorchColorController.MinimumAlphaFloor, 1.0f)
                     : 1.0f;
@@ -168,12 +156,11 @@ namespace WispTorchHeeler.Painter
                 feedbackMessage = ModLocalization.Localize(ModLocalization.TokenMsgPainted, "#" + hexColor);
             }
 
-            // Sync custom color to ZDO and broadcast to all clients
             netView.ClaimOwnership();
             netView.GetZDO().Set(WispTorchColorController.ColorKeyHash, hexColor);
             netView.InvokeRPC(ZNetView.Everybody, "WTH_SetColor", hexColor);
 
-            if (ModConfig.ShowPainterFeedback.Value && MessageHud.instance != null)
+            if (ModConfig.ShowPainterFeedback.Value && MessageHud.instance)
             {
                 MessageHud.instance.ShowMessage(MessageHud.MessageType.Center, feedbackMessage);
             }
@@ -184,13 +171,47 @@ namespace WispTorchHeeler.Painter
                 : $"[TorchPainter] Applied color #{hexColor} to '{targetController.gameObject.name}'.");
         }
 
+        public static void AppendPaintPrompt(HoverText hoverText, ref string displayText)
+        {
+            if (!ModConfig.EnableMod.Value || !ModConfig.AllowTorchPainting.Value)
+            {
+                return;
+            }
+
+            WispTorchColorController? controller = ResolveControllerFromObject(hoverText.gameObject);
+
+            if (!controller)
+            {
+                return;
+            }
+
+            string prefabName = Utils.GetPrefabName(controller.gameObject);
+            if (prefabName == Pieces.WispPieceManager.NativeMistTorchPrefab && !ModConfig.AffectNativeMistTorches.Value)
+            {
+                return;
+            }
+
+            string paintKey = ModConfig.PaintTorchHotkey.Value.ToString();
+            string resetKey = ModConfig.ResetTorchHotkey.Value.ToString();
+            string brushHexColor = ColorUtility.ToHtmlStringRGB(ModConfig.PainterColor.Value);
+
+            string paintPrompt = ModLocalization.Localize(ModLocalization.TokenPromptPaint);
+            string resetPrompt = ModLocalization.Localize(ModLocalization.TokenPromptReset);
+
+            if (string.IsNullOrEmpty(displayText))
+            {
+                displayText = global::Localization.instance.Localize(hoverText.m_text);
+            }
+
+            displayText += $"\n[<color=#{brushHexColor}><b>{paintKey}</b></color>] {paintPrompt}\n[<color=yellow><b>{resetKey}</b></color>] {resetPrompt}";
+        }
+
         private static WispTorchColorController? ResolveControllerFromObject(GameObject targetGameObject)
         {
-            if (targetGameObject == null) return null;
+            if (!targetGameObject) return null;
 
-            return targetGameObject.GetComponent<WispTorchColorController>()
-                ?? targetGameObject.GetComponentInParent<WispTorchColorController>()
-                ?? targetGameObject.GetComponentInChildren<WispTorchColorController>();
+            WispTorchColorController parentController = targetGameObject.GetComponentInParent<WispTorchColorController>();
+            return parentController ? parentController : targetGameObject.GetComponentInChildren<WispTorchColorController>();
         }
 
         private static WispTorchColorController? RaycastForController(Ray ray, float maxDistance, int layerMask)
@@ -199,12 +220,12 @@ namespace WispTorchHeeler.Painter
             if (hits == null || hits.Length == 0) return null;
 
             Array.Sort(hits, (firstHit, secondHit) => firstHit.distance.CompareTo(secondHit.distance));
-            foreach (var hit in hits)
+            foreach (RaycastHit hit in hits)
             {
-                if (hit.collider == null) continue;
+                if (!hit.collider) continue;
 
-                var controller = ResolveControllerFromObject(hit.collider.gameObject);
-                if (controller != null)
+                WispTorchColorController? controller = ResolveControllerFromObject(hit.collider.gameObject);
+                if (controller)
                 {
                     Plugin.LogDebug($"[TorchPainter] Targeted torch via raycast ({hit.distance:F1}m): '{controller.gameObject.name}'.");
                     return controller;
@@ -215,14 +236,14 @@ namespace WispTorchHeeler.Painter
 
         private static void PlayFeedbackEffect(Vector3 position)
         {
-            if (ZNetScene.instance == null) return;
-
-            GameObject? feedbackPrefab = ZNetScene.instance.GetPrefab("sfx_wisp_spawn")
-                                      ?? ZNetScene.instance.GetPrefab("vfx_wisp_spawn")
-                                      ?? ZNetScene.instance.GetPrefab("sfx_build_hammer_metal");
-            if (feedbackPrefab != null)
+            foreach (string prefabName in s_feedbackPrefabNames)
             {
-                UnityEngine.Object.Instantiate(feedbackPrefab, position, Quaternion.identity);
+                GameObject feedbackPrefab = ZNetScene.instance.GetPrefab(prefabName);
+                if (feedbackPrefab)
+                {
+                    UnityEngine.Object.Instantiate(feedbackPrefab, position, Quaternion.identity);
+                    return;
+                }
             }
         }
     }

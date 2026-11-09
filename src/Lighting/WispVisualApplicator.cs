@@ -4,11 +4,7 @@ using UnityEngine;
 
 namespace WispTorchHeeler.Lighting
 {
-    /// <summary>
-    /// Shared graphics applicator managing point lights, particle systems, demister ball shaders,
-    /// and spark particles across torches, lamps, and body-worn demister accessories.
-    /// Strictly cosmetic: never modifies physics, force fields, or mist clearance ranges.
-    /// </summary>
+    // shared by torches, lamps and the worn demister. only touches lights, particles and materials, never force fields or mist ranges
     public class WispVisualApplicator
     {
         public static readonly Color NativeFallbackColor = new Color(0.706f, 0.941f, 1.0f, 1.0f); // #B4F0FF
@@ -18,10 +14,7 @@ namespace WispTorchHeeler.Lighting
         private static readonly int s_color = Shader.PropertyToID("_Color");
         private static readonly int s_tintColor = Shader.PropertyToID("_TintColor");
 
-        /// <summary>
-        /// Exact material names for demister balls, animated wisp swirls, outer glows, and spark particles.
-        /// Excludes base structures (wood posts, iron brackets, stone bases).
-        /// </summary>
+        // wisp and demister materials only, so wood posts, iron brackets and stone bases keep their look
         public static readonly HashSet<string> TargetedMaterialNames = new(StringComparer.OrdinalIgnoreCase)
         {
             "demister_ball",
@@ -34,13 +27,17 @@ namespace WispTorchHeeler.Lighting
             "slowwispysmoke"
         };
 
+        // these only get the emission tint, filled at runtime with mod materials like the hip cage lantern
+        public static readonly HashSet<string> EmissionOnlyMaterialNames = new(StringComparer.OrdinalIgnoreCase);
+
         private Light[] _lights = Array.Empty<Light>();
         private float[] _originalLightIntensities = Array.Empty<float>();
+        private float[] _originalLightRanges = Array.Empty<float>();
         private Color[] _originalLightColors = Array.Empty<Color>();
 
         private ParticleSystem[] _particleSystems = Array.Empty<ParticleSystem>();
         private ParticleSystem.MinMaxGradient[] _originalParticleGradients = Array.Empty<ParticleSystem.MinMaxGradient>();
-        // Infinite-lifetime particles (e.g. flare halo) require stop+clear+play for color changes to take effect.
+        // infinite lifetime particles like the flare halo never re-emit, so a new start color only shows after a stop, clear and play
         private bool[] _isInfiniteLifetimeParticle = Array.Empty<bool>();
 
         private Renderer[] _targetRenderers = Array.Empty<Renderer>();
@@ -48,17 +45,15 @@ namespace WispTorchHeeler.Lighting
         private Color[] _originalEmissionColors = Array.Empty<Color>();
         private Color[] _originalAlbedoColors = Array.Empty<Color>();
         private Color[] _originalTintColors = Array.Empty<Color>();
+        private bool[] _isEmissionOnlyRenderer = Array.Empty<bool>();
 
         public int LightCount => _lights.Length;
         public int ParticleSystemCount => _particleSystems.Length;
         public int TargetRendererCount => _targetRenderers.Length;
 
-        /// <summary>
-        /// Discovers and caches all child lights, particle systems, and demister renderers on the target GameObject.
-        /// </summary>
         public void Initialize(GameObject rootGameObject)
         {
-            if (rootGameObject == null)
+            if (!rootGameObject)
             {
                 return;
             }
@@ -66,10 +61,20 @@ namespace WispTorchHeeler.Lighting
             _lights = rootGameObject.GetComponentsInChildren<Light>(true);
             _originalLightColors = new Color[_lights.Length];
             _originalLightIntensities = new float[_lights.Length];
+            _originalLightRanges = new float[_lights.Length];
             for (int lightIndex = 0; lightIndex < _lights.Length; lightIndex++)
             {
-                _originalLightColors[lightIndex] = _lights[lightIndex].color;
-                _originalLightIntensities[lightIndex] = _lights[lightIndex].intensity;
+                Light light = _lights[lightIndex];
+                _originalLightColors[lightIndex] = light.color;
+
+                // LightFlicker and LightLod only fill m_light in their Awake. before that their base fields are still initializers,
+                // after it light.intensity and light.range are whatever the flicker and the lod ramp left there, so read whichever holds the real value
+                _originalLightIntensities[lightIndex] = light.TryGetComponent(out LightFlicker lightFlicker) && lightFlicker.m_light
+                    ? lightFlicker.m_baseIntensity
+                    : light.intensity;
+                _originalLightRanges[lightIndex] = light.TryGetComponent(out LightLod lightLod) && lightLod.m_light
+                    ? lightLod.m_baseRange
+                    : light.range;
             }
 
             _particleSystems = rootGameObject.GetComponentsInChildren<ParticleSystem>(true);
@@ -77,23 +82,15 @@ namespace WispTorchHeeler.Lighting
             _isInfiniteLifetimeParticle = new bool[_particleSystems.Length];
             for (int particleIndex = 0; particleIndex < _particleSystems.Length; particleIndex++)
             {
-                var particleSystem = _particleSystems[particleIndex];
+                ParticleSystem particleSystem = _particleSystems[particleIndex];
                 _originalParticleGradients[particleIndex] = particleSystem.main.startColor;
-
-                // Infinite-lifetime halo defaults to World space, stranding it at the teleport origin.
-                // Switch to Local so it follows the orb, and flag it for stop+clear+play on color changes.
-                var mainModule = particleSystem.main;
-                if (float.IsInfinity(mainModule.startLifetime.constant))
-                {
-                    mainModule.simulationSpace = ParticleSystemSimulationSpace.Local;
-                    _isInfiniteLifetimeParticle[particleIndex] = true;
-                }
+                _isInfiniteLifetimeParticle[particleIndex] = float.IsInfinity(particleSystem.main.startLifetime.constant);
             }
 
-            var validRenderers = new List<Renderer>();
-            foreach (var currentRenderer in rootGameObject.GetComponentsInChildren<Renderer>(true))
+            List<Renderer> validRenderers = new List<Renderer>();
+            foreach (Renderer currentRenderer in rootGameObject.GetComponentsInChildren<Renderer>(true))
             {
-                if (currentRenderer != null && IsTargetMaterial(currentRenderer.sharedMaterial))
+                if (currentRenderer && (IsTargetMaterial(currentRenderer.sharedMaterial) || IsEmissionOnlyMaterial(currentRenderer.sharedMaterial)))
                 {
                     validRenderers.Add(currentRenderer);
                 }
@@ -104,45 +101,46 @@ namespace WispTorchHeeler.Lighting
             _originalEmissionColors = new Color[_targetRenderers.Length];
             _originalAlbedoColors = new Color[_targetRenderers.Length];
             _originalTintColors = new Color[_targetRenderers.Length];
+            _isEmissionOnlyRenderer = new bool[_targetRenderers.Length];
 
             for (int rendererIndex = 0; rendererIndex < _targetRenderers.Length; rendererIndex++)
             {
-                var material = _targetRenderers[rendererIndex].sharedMaterial;
+                Material material = _targetRenderers[rendererIndex].sharedMaterial;
                 _originalSharedMaterials[rendererIndex] = material;
+                _isEmissionOnlyRenderer[rendererIndex] = IsEmissionOnlyMaterial(material);
                 _originalEmissionColors[rendererIndex] = material.HasProperty(s_emissionColor) ? material.GetColor(s_emissionColor) : Color.white;
                 _originalAlbedoColors[rendererIndex] = material.HasProperty(s_color) ? material.GetColor(s_color) : Color.white;
                 _originalTintColors[rendererIndex] = material.HasProperty(s_tintColor) ? material.GetColor(s_tintColor) : Color.white;
             }
         }
 
-        /// <summary>
-        /// Applies target color, light intensity multiplier, and shader emission multiplier to all cached components.
-        /// Preserves native gradient keyframe timing and HDR intensity curves without blowout.
-        /// </summary>
-        public void ApplyColor(Color targetColor, float? lightIntensityMultiplier = null, float emissionMultiplier = 1.0f, bool allowAlpha = false)
+        public void ApplyColor(Color targetColor, float? lightIntensityMultiplier = null, float? lightRangeMultiplier = null, float emissionMultiplier = 1.0f, bool allowAlpha = false)
         {
-            // 1. Point lights (Unity point lights use RGB)
             for (int lightIndex = 0; lightIndex < _lights.Length; lightIndex++)
             {
-                if (_lights[lightIndex] != null)
+                if (_lights[lightIndex])
                 {
                     _lights[lightIndex].color = targetColor;
                     if (lightIntensityMultiplier.HasValue && lightIndex < _originalLightIntensities.Length)
                     {
-                        _lights[lightIndex].intensity = _originalLightIntensities[lightIndex] * lightIntensityMultiplier.Value;
+                        SetLightIntensity(_lights[lightIndex], _originalLightIntensities[lightIndex] * lightIntensityMultiplier.Value);
+                    }
+
+                    if (lightRangeMultiplier.HasValue)
+                    {
+                        SetLightRange(_lights[lightIndex], _originalLightRanges[lightIndex] * lightRangeMultiplier.Value);
                     }
                 }
             }
 
             float alphaMultiplier = allowAlpha ? Mathf.Clamp(targetColor.a, MinimumAlphaFloor, 1.0f) : 1.0f;
 
-            // 2. Particle Systems: tint RGB and scale alpha curve while preserving original gradient keyframe timings.
-            // Infinite-lifetime particles are stopped and replayed so the new startColor takes effect immediately.
+            // gradient key timings stay, only the colors and alpha change
             for (int particleIndex = 0; particleIndex < _particleSystems.Length; particleIndex++)
             {
-                if (_particleSystems[particleIndex] != null && particleIndex < _originalParticleGradients.Length)
+                if (_particleSystems[particleIndex] && particleIndex < _originalParticleGradients.Length)
                 {
-                    var mainModule = _particleSystems[particleIndex].main;
+                    ParticleSystem.MainModule mainModule = _particleSystems[particleIndex].main;
                     mainModule.startColor = TintMinMaxGradient(in _originalParticleGradients[particleIndex], targetColor, alphaMultiplier);
 
                     if (particleIndex < _isInfiniteLifetimeParticle.Length && _isInfiniteLifetimeParticle[particleIndex])
@@ -153,46 +151,48 @@ namespace WispTorchHeeler.Lighting
                 }
             }
 
-            // 3. Demister Ball, Animated Effects & Particle Spark Materials
             for (int rendererIndex = 0; rendererIndex < _targetRenderers.Length; rendererIndex++)
             {
-                var currentRenderer = _targetRenderers[rendererIndex];
-                if (currentRenderer == null)
+                Renderer currentRenderer = _targetRenderers[rendererIndex];
+                if (!currentRenderer)
                 {
                     continue;
                 }
 
-                var runtimeMaterial = currentRenderer.material;
-                if (runtimeMaterial == null)
+                Material runtimeMaterial = currentRenderer.material;
+                if (!runtimeMaterial)
                 {
                     continue;
                 }
 
                 TintEmissiveMaterialProperty(runtimeMaterial, s_emissionColor, _originalEmissionColors[rendererIndex], targetColor, emissionMultiplier);
+                if (_isEmissionOnlyRenderer[rendererIndex])
+                {
+                    continue;
+                }
+
                 TintStandardMaterialProperty(runtimeMaterial, s_color, _originalAlbedoColors[rendererIndex], targetColor, alphaMultiplier);
                 TintStandardMaterialProperty(runtimeMaterial, s_tintColor, _originalTintColors[rendererIndex], targetColor, alphaMultiplier);
             }
         }
 
-        /// <summary>
-        /// Restores original light colors, intensities, particle start gradients, and shared materials.
-        /// </summary>
         public void RestoreOriginalColors()
         {
             for (int lightIndex = 0; lightIndex < _lights.Length; lightIndex++)
             {
-                if (_lights[lightIndex] != null && lightIndex < _originalLightColors.Length && lightIndex < _originalLightIntensities.Length)
+                if (_lights[lightIndex] && lightIndex < _originalLightColors.Length && lightIndex < _originalLightIntensities.Length)
                 {
                     _lights[lightIndex].color = _originalLightColors[lightIndex];
-                    _lights[lightIndex].intensity = _originalLightIntensities[lightIndex];
+                    SetLightIntensity(_lights[lightIndex], _originalLightIntensities[lightIndex]);
+                    SetLightRange(_lights[lightIndex], _originalLightRanges[lightIndex]);
                 }
             }
 
             for (int particleIndex = 0; particleIndex < _particleSystems.Length; particleIndex++)
             {
-                if (_particleSystems[particleIndex] != null && particleIndex < _originalParticleGradients.Length)
+                if (_particleSystems[particleIndex] && particleIndex < _originalParticleGradients.Length)
                 {
-                    var mainModule = _particleSystems[particleIndex].main;
+                    ParticleSystem.MainModule mainModule = _particleSystems[particleIndex].main;
                     mainModule.startColor = _originalParticleGradients[particleIndex];
 
                     if (particleIndex < _isInfiniteLifetimeParticle.Length && _isInfiniteLifetimeParticle[particleIndex])
@@ -205,32 +205,53 @@ namespace WispTorchHeeler.Lighting
 
             for (int rendererIndex = 0; rendererIndex < _targetRenderers.Length; rendererIndex++)
             {
-                if (_targetRenderers[rendererIndex] != null && rendererIndex < _originalSharedMaterials.Length)
+                if (_targetRenderers[rendererIndex] && rendererIndex < _originalSharedMaterials.Length)
                 {
-                    if (_targetRenderers[rendererIndex].sharedMaterial != _originalSharedMaterials[rendererIndex])
+                    Material runtimeMaterial = _targetRenderers[rendererIndex].sharedMaterial;
+                    if (runtimeMaterial && runtimeMaterial != _originalSharedMaterials[rendererIndex])
                     {
-                        UnityEngine.Object.Destroy(_targetRenderers[rendererIndex].sharedMaterial);
+                        UnityEngine.Object.Destroy(runtimeMaterial);
                         _targetRenderers[rendererIndex].sharedMaterial = _originalSharedMaterials[rendererIndex];
                     }
                 }
             }
         }
 
-        /// <summary>
-        /// Cleans up runtime instanced materials with a delayed destroy to prevent debris glitches and memory leaks.
-        /// </summary>
+        // renderer.material copies dont get freed with their renderer
         public void CleanupRuntimeMaterials()
         {
             for (int rendererIndex = 0; rendererIndex < _targetRenderers.Length; rendererIndex++)
             {
-                if (_targetRenderers[rendererIndex] != null && rendererIndex < _originalSharedMaterials.Length)
+                if (_targetRenderers[rendererIndex] && rendererIndex < _originalSharedMaterials.Length)
                 {
-                    var runtimeMaterial = _targetRenderers[rendererIndex].sharedMaterial;
-                    if (runtimeMaterial != null && runtimeMaterial != _originalSharedMaterials[rendererIndex])
+                    Material runtimeMaterial = _targetRenderers[rendererIndex].sharedMaterial;
+                    if (runtimeMaterial && runtimeMaterial != _originalSharedMaterials[rendererIndex])
                     {
                         UnityEngine.Object.Destroy(runtimeMaterial, 10f);
                     }
                 }
+            }
+        }
+
+        // LightFlicker rewrites light.intensity every frame from m_baseIntensity so the base has to move with it
+        // light.intensity still gets set too, a flicker whose Awake has not run yet copies it into m_baseIntensity
+        public static void SetLightIntensity(Light light, float intensity)
+        {
+            light.intensity = intensity;
+            if (light.TryGetComponent(out LightFlicker lightFlicker))
+            {
+                lightFlicker.m_baseIntensity = intensity;
+            }
+        }
+
+        // LightLod ramps light.range back to m_baseRange whenever its once a second check finds the light in lod distance, so the base has to move with it
+        // light.range still gets set too, a LightLod whose Awake has not run yet copies it into m_baseRange
+        public static void SetLightRange(Light light, float range)
+        {
+            light.range = range;
+            if (light.TryGetComponent(out LightLod lightLod))
+            {
+                lightLod.m_baseRange = range;
             }
         }
 
@@ -297,8 +318,8 @@ namespace WispTorchHeeler.Lighting
                 return new Gradient();
             }
 
-            var originalColorKeys = sourceGradient.colorKeys;
-            var newColorKeys = new GradientColorKey[originalColorKeys.Length];
+            GradientColorKey[] originalColorKeys = sourceGradient.colorKeys;
+            GradientColorKey[] newColorKeys = new GradientColorKey[originalColorKeys.Length];
             for (int keyIndex = 0; keyIndex < originalColorKeys.Length; keyIndex++)
             {
                 newColorKeys[keyIndex] = new GradientColorKey(new Color(targetColor.r, targetColor.g, targetColor.b), originalColorKeys[keyIndex].time);
@@ -307,7 +328,7 @@ namespace WispTorchHeeler.Lighting
             GradientAlphaKey[] alphaKeys;
             if (alphaMultiplier < 0.999f)
             {
-                var originalAlphaKeys = sourceGradient.alphaKeys;
+                GradientAlphaKey[] originalAlphaKeys = sourceGradient.alphaKeys;
                 alphaKeys = new GradientAlphaKey[originalAlphaKeys.Length];
                 for (int keyIndex = 0; keyIndex < originalAlphaKeys.Length; keyIndex++)
                 {
@@ -319,14 +340,11 @@ namespace WispTorchHeeler.Lighting
                 alphaKeys = sourceGradient.alphaKeys;
             }
 
-            var tintedGradient = new Gradient();
+            Gradient tintedGradient = new Gradient();
             tintedGradient.SetKeys(newColorKeys, alphaKeys);
             return tintedGradient;
         }
 
-        /// <summary>
-        /// Formats a Color as an HTML RGB or RGBA hex string.
-        /// </summary>
         public static string FormatColorHex(Color color, bool allowAlpha)
         {
             float alpha = allowAlpha ? Mathf.Clamp(color.a, MinimumAlphaFloor, 1.0f) : 1.0f;
@@ -336,9 +354,6 @@ namespace WispTorchHeeler.Lighting
                 : ColorUtility.ToHtmlStringRGB(formattedColor);
         }
 
-        /// <summary>
-        /// Safely parses an HTML hex string (with or without leading '#') into a Color.
-        /// </summary>
         public static bool TryParseColorHex(string? hexString, out Color color)
         {
             color = Color.white;
@@ -351,12 +366,9 @@ namespace WispTorchHeeler.Lighting
             return ColorUtility.TryParseHtmlString(normalizedHex, out color);
         }
 
-        /// <summary>
-        /// Extracts the base material name by stripping any runtime Unity ' (Instance)' suffix.
-        /// </summary>
         public static string NormalizeMaterialName(Material? material)
         {
-            if (material == null)
+            if (!material)
             {
                 return string.Empty;
             }
@@ -366,13 +378,16 @@ namespace WispTorchHeeler.Lighting
             return instanceIndex >= 0 ? materialName.Substring(0, instanceIndex) : materialName;
         }
 
-        /// <summary>
-        /// Determines whether a material is a targeted demister ball, spark, or animated wisp material.
-        /// </summary>
         public static bool IsTargetMaterial(Material? material)
         {
             string baseName = NormalizeMaterialName(material);
             return !string.IsNullOrEmpty(baseName) && TargetedMaterialNames.Contains(baseName);
+        }
+
+        public static bool IsEmissionOnlyMaterial(Material? material)
+        {
+            string baseName = NormalizeMaterialName(material);
+            return !string.IsNullOrEmpty(baseName) && EmissionOnlyMaterialNames.Contains(baseName);
         }
     }
 }

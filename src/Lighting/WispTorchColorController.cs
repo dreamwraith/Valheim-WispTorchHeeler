@@ -5,16 +5,10 @@ using WispTorchHeeler.Configuration;
 
 namespace WispTorchHeeler.Lighting
 {
-    /// <summary>
-    /// Controls dynamic lighting, demister ball shaders, and particle spark coloring for tiered wisp torches and lamps.
-    /// Event-driven: reacts to RPCs, world stream OnEnable(), and config SettingChanged events.
-    /// Delegates rendering and material management to WispVisualApplicator.
-    /// </summary>
     public class WispTorchColorController : MonoBehaviour, IPlaced
     {
         public static readonly int ColorKeyHash = "wisptorch_light_color".GetStableHashCode();
         public const float MinimumAlphaFloor = WispVisualApplicator.MinimumAlphaFloor;
-        public static readonly Color NativeFallbackColor = WispVisualApplicator.NativeFallbackColor;
 
         public static readonly HashSet<WispTorchColorController> Instances = new();
 
@@ -29,7 +23,7 @@ namespace WispTorchHeeler.Lighting
             _netView = GetComponent<ZNetView>();
             _visualApplicator.Initialize(gameObject);
 
-            if (_netView != null)
+            if (_netView)
             {
                 _netView.Register<string>("WTH_SetColor", RPC_SetColor);
             }
@@ -45,7 +39,7 @@ namespace WispTorchHeeler.Lighting
 
         private void Start()
         {
-            if (_netView != null && !_netView.IsValid())
+            if (_netView && !_netView.IsValid())
             {
                 StartCoroutine(WaitForZDOAndInit());
             }
@@ -54,20 +48,17 @@ namespace WispTorchHeeler.Lighting
         private System.Collections.IEnumerator WaitForZDOAndInit()
         {
             int maxFrames = 30;
-            while (_netView != null && !_netView.IsValid() && maxFrames-- > 0)
+            while (_netView && !_netView.IsValid() && maxFrames-- > 0)
             {
                 yield return null;
             }
 
-            if (_netView != null && _netView.IsValid())
+            if (_netView && _netView.IsValid())
             {
                 RefreshColor();
             }
         }
 
-        /// <summary>
-        /// Native Valheim placement hook invoked immediately on the placing client when the piece is placed with the hammer.
-        /// </summary>
         public void OnPlaced()
         {
             if (!ModConfig.EnableMod.Value || !ModConfig.AutoPaintOnPlacement.Value || !ModConfig.AllowTorchPainting.Value)
@@ -76,23 +67,23 @@ namespace WispTorchHeeler.Lighting
             }
 
             string prefabName = Utils.GetPrefabName(gameObject);
-            if (prefabName == Pieces.WispPieceManager.NativeMistTorchPrefab && (ModConfig.AffectNativeMistTorches == null || !ModConfig.AffectNativeMistTorches.Value))
+            if (prefabName == Pieces.WispPieceManager.NativeMistTorchPrefab && !ModConfig.AffectNativeMistTorches.Value)
             {
                 return;
             }
 
-            if (_netView == null)
+            if (!_netView)
             {
                 _netView = GetComponent<ZNetView>();
             }
 
-            if (_netView == null || !_netView.IsValid())
+            if (!_netView || !_netView.IsValid())
             {
                 return;
             }
 
             Color activeColor = ModConfig.PainterColor.Value;
-            bool allowAlpha = ModConfig.EnableAlphaCustomization != null && ModConfig.EnableAlphaCustomization.Value;
+            bool allowAlpha = ModConfig.EnableAlphaCustomization.Value;
             string hexColor = WispVisualApplicator.FormatColorHex(activeColor, allowAlpha);
 
             _netView.ClaimOwnership();
@@ -114,9 +105,6 @@ namespace WispTorchHeeler.Lighting
             _visualApplicator.CleanupRuntimeMaterials();
         }
 
-        /// <summary>
-        /// Remote Procedure Call received when a torch is painted or reset.
-        /// </summary>
         private void RPC_SetColor(long sender, string hexColor)
         {
             if (WispVisualApplicator.TryParseColorHex(hexColor, out Color color))
@@ -129,13 +117,9 @@ namespace WispTorchHeeler.Lighting
             }
         }
 
-        /// <summary>
-        /// Evaluates the active color hierarchy and applies it.
-        /// Restores original native styling if AffectNativeMistTorches is disabled.
-        /// </summary>
         public void RefreshColor()
         {
-            if (ModConfig.AffectNativeMistTorches != null && !ModConfig.AffectNativeMistTorches.Value)
+            if (!ModConfig.AffectNativeMistTorches.Value)
             {
                 string prefabName = Utils.GetPrefabName(gameObject);
                 if (prefabName == Pieces.WispPieceManager.NativeMistTorchPrefab)
@@ -153,10 +137,10 @@ namespace WispTorchHeeler.Lighting
             _visualApplicator.RestoreOriginalColors();
         }
 
+        // painted zdo color wins, then the enforced server default, then the client default
         public Color ResolveColor()
         {
-            // 1. Per-Piece Painted Color from ZDO
-            if (_netView != null && _netView.IsValid())
+            if (_netView && _netView.IsValid())
             {
                 string zdoColorString = _netView.GetZDO().GetString(ColorKeyHash, string.Empty);
                 if (WispVisualApplicator.TryParseColorHex(zdoColorString, out Color paintedColor))
@@ -165,35 +149,17 @@ namespace WispTorchHeeler.Lighting
                 }
             }
 
-            // 2. Enforced Server Default Color
-            if (ModConfig.EnforceServerDefaultColor != null && ModConfig.EnforceServerDefaultColor.Value)
-            {
-                return ModConfig.ServerDefaultLightColor != null ? ModConfig.ServerDefaultLightColor.Value : NativeFallbackColor;
-            }
-
-            // 3. Client Global Default Color
-            if (ModConfig.DefaultLightColor != null)
-            {
-                return ModConfig.DefaultLightColor.Value;
-            }
-
-            // 4. Native Mistlands Fallback
-            return NativeFallbackColor;
+            return ModConfig.EnforceServerDefaultColor.Value
+                ? ModConfig.ServerDefaultLightColor.Value
+                : ModConfig.DefaultLightColor.Value;
         }
 
-        /// <summary>
-        /// Applies the resolved color to point lights, particles, and demister ball/effect materials.
-        /// Preserves native emissive intensity without blowout.
-        /// </summary>
         public void ApplyColor(Color color)
         {
-            bool allowAlpha = ModConfig.EnableAlphaCustomization != null && ModConfig.EnableAlphaCustomization.Value;
-            _visualApplicator.ApplyColor(color, null, 1.0f, allowAlpha);
+            bool allowAlpha = ModConfig.EnableAlphaCustomization.Value;
+            _visualApplicator.ApplyColor(color, null, null, 1.0f, allowAlpha);
         }
 
-        /// <summary>
-        /// Applies current physical properties (mist clearance force fields, light intensity/range, health).
-        /// </summary>
         public void RefreshProperties()
         {
             string prefabName = Utils.GetPrefabName(gameObject);
@@ -201,30 +167,28 @@ namespace WispTorchHeeler.Lighting
             UpdateAreaMarkerRadius();
         }
 
-        /// <summary>
-        /// Retrieves the active mist suppression outer radius from the force field.
-        /// </summary>
         public float GetMistSuppressionRadius()
         {
-            var forceField = GetComponentInChildren<ParticleSystemForceField>(true);
-            if (forceField != null && forceField.endRange > 0f)
+            ParticleSystemForceField forceField = GetComponentInChildren<ParticleSystemForceField>(true);
+            if (forceField && forceField.endRange > 0f)
             {
                 return forceField.endRange;
             }
             return 0f;
         }
 
-        /// <summary>
-        /// Creates a clean GameObject with a pure CircleProjector boundary ring (no EffectArea or Colliders).
-        /// </summary>
+        // builds a bare CircleProjector instead of cloning the template marker, so only the ring comes along
         public void EnsureAreaMarker()
         {
-            if (_areaMarkerGameObject != null) return;
-            var template = Pieces.WispPieceManager.AreaMarkerTemplate;
-            if (template == null) return;
+            if (_areaMarkerGameObject) return;
+            GameObject? template = Pieces.WispPieceManager.AreaMarkerTemplate;
+            if (!template) return;
 
-            var templateProjector = template.GetComponent<CircleProjector>() ?? template.GetComponentInChildren<CircleProjector>();
-            if (templateProjector == null || templateProjector.m_prefab == null) return;
+            if (!template.TryGetComponent(out CircleProjector templateProjector))
+            {
+                templateProjector = template.GetComponentInChildren<CircleProjector>();
+            }
+            if (!templateProjector || !templateProjector.m_prefab) return;
 
             _areaMarkerGameObject = new GameObject("_MistSuppressionMarker");
             _areaMarkerGameObject.transform.SetParent(transform, false);
@@ -240,16 +204,13 @@ namespace WispTorchHeeler.Lighting
             UpdateAreaMarkerRadius();
         }
 
-        /// <summary>
-        /// Updates the CircleProjector radius to match the active mist suppression force field.
-        /// </summary>
         public void UpdateAreaMarkerRadius()
         {
-            if (_circleProjector == null) return;
+            if (!_circleProjector) return;
             float radius = GetMistSuppressionRadius();
             if (radius <= 0f)
             {
-                _areaMarkerGameObject?.SetActive(false);
+                _circleProjector.gameObject.SetActive(false);
                 return;
             }
 
@@ -259,28 +220,20 @@ namespace WispTorchHeeler.Lighting
             RefreshMarkerVisibility();
         }
 
-        /// <summary>
-        /// Shows or hides the boundary ring depending on the ShowMistSuppressionRadius config setting.
-        /// </summary>
         public void RefreshMarkerVisibility()
         {
-            if (_areaMarkerGameObject != null)
+            if (_areaMarkerGameObject)
             {
-                bool shouldShow = ModConfig.ShowMistSuppressionRadius != null
-                               && ModConfig.ShowMistSuppressionRadius.Value
-                               && GetMistSuppressionRadius() > 0f;
+                bool shouldShow = ModConfig.ShowMistSuppressionRadius.Value && GetMistSuppressionRadius() > 0f;
                 _areaMarkerGameObject.SetActive(shouldShow);
             }
         }
 
-        /// <summary>
-        /// Refreshes all active area marker rings across the scene when the debug toggle changes.
-        /// </summary>
         public static void RefreshAllMarkers()
         {
-            foreach (var instance in Instances)
+            foreach (WispTorchColorController instance in Instances)
             {
-                if (instance != null)
+                if (instance)
                 {
                     instance.EnsureAreaMarker();
                     instance.RefreshMarkerVisibility();
@@ -288,23 +241,17 @@ namespace WispTorchHeeler.Lighting
             }
         }
 
-        /// <summary>
-        /// Refreshes physical properties on all active instances matching the specified prefab name.
-        /// </summary>
         public static void RefreshPropertiesForPrefab(string prefabName)
         {
-            foreach (var instance in Instances)
+            foreach (WispTorchColorController instance in Instances)
             {
-                if (instance != null && Utils.GetPrefabName(instance.gameObject) == prefabName)
+                if (instance && Utils.GetPrefabName(instance.gameObject) == prefabName)
                 {
                     instance.RefreshProperties();
                 }
             }
         }
 
-        /// <summary>
-        /// Initializes configuration change event listeners for wisp torches and lamps.
-        /// </summary>
         public static void Initialize()
         {
             ModConfig.EnableMod.SettingChanged += (sender, args) => RefreshAll();
@@ -316,14 +263,11 @@ namespace WispTorchHeeler.Lighting
             ModConfig.ShowMistSuppressionRadius.SettingChanged += (sender, args) => RefreshAllMarkers();
         }
 
-        /// <summary>
-        /// Refreshes all active torch instances across the scene when config settings change.
-        /// </summary>
         public static void RefreshAll()
         {
-            foreach (var instance in Instances)
+            foreach (WispTorchColorController instance in Instances)
             {
-                if (instance != null)
+                if (instance)
                 {
                     instance.RefreshColor();
                     instance.RefreshProperties();

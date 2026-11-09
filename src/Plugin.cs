@@ -31,7 +31,6 @@ namespace WispTorchHeeler
             Instance = this;
             Log = Logger;
 
-            // 1. Initialize configuration and ConditionalConfigSync
             ModConfig.Initialize(Config);
             new ConfigFileWatcher(Config);
 
@@ -41,48 +40,27 @@ namespace WispTorchHeeler
                 return;
             }
 
-            // 2. Initialize custom pieces and prefabs
             WispPieceManager.Initialize();
+            WispPieceRegistration.Initialize();
 
             // servers only need the pieces and synced settings
             if (GUIManager.IsHeadless())
             {
-                enabled = false;
                 return;
             }
 
-            // 3. Register localizations via standalone module
             ModLocalization.Initialize();
-
-            // 4. Register buttons into Valheim's native ZInput via Jotunn InputManager
             ModConfig.RegisterInputButtons();
+            gameObject.AddComponent<TorchPainterInput>();
 
-            // 5. Initialize lighting and demister controllers
             WispTorchColorController.Initialize();
             WispDemisterColorController.Initialize();
+            WispDemisterHipTemplates.Initialize();
+            WispDemisterIdleMotion.Initialize();
 
-            // 6. Apply Harmony patches
             _harmony = Harmony.CreateAndPatchAll(Assembly.GetExecutingAssembly(), ModGUID);
 
             Log.LogInfo($"{ModName} v{ModVersion} loaded successfully.");
-        }
-
-        private void Update()
-        {
-            if (!ModConfig.EnableMod.Value || Player.m_localPlayer == null)
-            {
-                return;
-            }
-
-            // Check Jotunn-registered buttons in ZInput (Jotunn handles ActiveInGUI suppression automatically)
-            if (ModConfig.ButtonResetConfig != null && ZInput.GetButtonDown(ModConfig.ButtonResetConfig.Name))
-            {
-                TorchPainter.TryPaintOrReset(isReset: true);
-            }
-            else if (ModConfig.ButtonPaintConfig != null && ZInput.GetButtonDown(ModConfig.ButtonPaintConfig.Name))
-            {
-                TorchPainter.TryPaintOrReset(isReset: false);
-            }
         }
 
         private void OnDestroy()
@@ -92,7 +70,7 @@ namespace WispTorchHeeler
 
         internal static void LogDebug(string message)
         {
-            if (ModConfig.EnableDebugLogs != null && ModConfig.EnableDebugLogs.Value)
+            if (ModConfig.EnableDebugLogs.Value)
             {
                 Log.LogInfo($"[DEBUG] {message}");
             }

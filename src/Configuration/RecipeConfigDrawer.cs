@@ -6,10 +6,7 @@ using UnityEngine;
 
 namespace WispTorchHeeler.Configuration
 {
-    /// <summary>
-    /// Custom IMGUI drawer for crafting recipe configuration entries in BepInEx ConfigurationManager.
-    /// Displays recipes as an interactive array of [PrefabName : Amount] rows with add (+) and remove (-) controls.
-    /// </summary>
+    // config manager drawer that shows a recipe string as editable PrefabName : Amount rows
     public static class RecipeConfigDrawer
     {
         public const string DefaultPlaceholderPrefab = "<PrefabName>";
@@ -21,18 +18,14 @@ namespace WispTorchHeeler.Configuration
 
         public record struct RecipeItemEntry(string PrefabName, int Amount);
 
-        /// <summary>
-        /// Action delegate passed to <see cref="ConfigurationManagerAttributes.CustomDrawer"/>.
-        /// </summary>
+        // handed to ConfigurationManagerAttributes.CustomDrawer
         public static void Draw(ConfigEntryBase entry)
         {
-            if (entry == null) return;
-
-            string rawValue = entry.BoxedValue as string ?? string.Empty;
+            string rawValue = entry.BoxedValue is string boxedValue ? boxedValue : string.Empty;
             List<RecipeItemEntry> items = Deserialize(rawValue);
 
             bool isChanged = false;
-            var updatedItems = new List<RecipeItemEntry>();
+            List<RecipeItemEntry> updatedItems = new List<RecipeItemEntry>();
 
             GUILayout.BeginVertical();
 
@@ -48,10 +41,10 @@ namespace WispTorchHeeler.Configuration
             {
                 for (int itemIndex = 0; itemIndex < items.Count; itemIndex++)
                 {
-                    var item = items[itemIndex];
+                    RecipeItemEntry item = items[itemIndex];
                     GUILayout.BeginHorizontal();
 
-                    string newPrefabName = GUILayout.TextField(item.PrefabName ?? string.Empty, GUILayout.ExpandWidth(true), GUILayout.MinWidth(60f));
+                    string newPrefabName = GUILayout.TextField(item.PrefabName, GUILayout.ExpandWidth(true), GUILayout.MinWidth(60f));
                     if (newPrefabName != item.PrefabName)
                     {
                         item.PrefabName = newPrefabName;
@@ -94,7 +87,7 @@ namespace WispTorchHeeler.Configuration
 
         public static List<RecipeItemEntry> Deserialize(string rawRecipeString)
         {
-            var parsedEntries = new List<RecipeItemEntry>();
+            List<RecipeItemEntry> parsedEntries = new List<RecipeItemEntry>();
             if (string.IsNullOrWhiteSpace(rawRecipeString)) return parsedEntries;
 
             string[] tokens = rawRecipeString.Split(new[] { ItemSeparator }, StringSplitOptions.RemoveEmptyEntries);
@@ -113,10 +106,7 @@ namespace WispTorchHeeler.Configuration
             return parsedEntries;
         }
 
-        public static string Serialize(IEnumerable<RecipeItemEntry> entries)
-        {
-            if (entries == null) return string.Empty;
-            return string.Join(ItemSeparator.ToString(), entries.Select(entry => $"{entry.PrefabName.Trim()}{AmountSeparator}{Mathf.Max(1, entry.Amount)}"));
-        }
+        public static string Serialize(IEnumerable<RecipeItemEntry> entries) =>
+            string.Join(ItemSeparator.ToString(), entries.Select(entry => $"{entry.PrefabName.Trim()}{AmountSeparator}{Mathf.Max(1, entry.Amount)}"));
     }
 }

@@ -24,23 +24,23 @@ Tiered Mistlands wisp torches and demister lamps with expanded mist clearance, i
 
 ## The Problem
 
-In native Valheim, clearing the thick mist of the Mistlands requires placing dozens of small, fragile native wisp torches in close proximity. This creates:
+In the base game, clearing the thick mist of the Mistlands requires placing dozens of small, fragile wisp torches in close proximity. This creates:
 
 - **Severe Visual Clutter & Construction Fatigue**: Expansive Mistlands bases, farms, and transit paths quickly devolve into chaotic thickets of sticks.
 - **Performance Overhead**: Dozens of overlapping particle system force fields, dynamic point lights, and particle emitters ticking simultaneously cause noticeable framerate drops.
 - **Rigid Aesthetics**: Builders are locked into a single fixed cyan/white color palette that cannot be customized to fit different build themes, architectural styles, or interior moods.
-- **Fragility**: Native torches possess only 200 HP (I was previously incorrect, the base game torch has 200 health, not 100), breaking easily from collateral combat damage, seeker attacks, or stray dvergr fire.
+- **Fragility**: Base game torches possess only 200 HP (I was previously incorrect, the base game torch has 200 health, not 100), breaking easily from collateral combat damage, seeker attacks, or stray dvergr fire.
 
 ---
 
 ## The Solution
 
-**WispTorchHeeler** introduces four tiered, late-game Mistlands lighting installations with progressively larger mist-clearance radii alongside an interactive, crosshair-driven "Torch Painter" system and multiplayer color synchronization via Valheim's native Zero Data Object (ZDO) architecture:
+**WispTorchHeeler** introduces four tiered, late-game Mistlands lighting installations with progressively larger mist-clearance radii alongside an interactive, crosshair-driven "Torch Painter" system and multiplayer color synchronization via Valheim's Zero Data Object (ZDO) system:
 
 - **Tiered Mist Clearance**: Four distinct lighting fixtures ranging from reinforced large torches to colossal dwarven monuments, clearing up to **3.75x** the fog radius (~14x coverage area) to reduce piece density and visual clutter.
 - **Interactive Torch Painter**: Aim at a torch or lamp from this mod, or a base game mist torch with `AffectNativeMistTorches` on, and press **`P`** to paint its light and particle effects with your chosen color, or **`LeftShift + P`** to reset it.
 - **Auto-Paint on Placement**: Newly placed torches and lamps can automatically inherit your active painter color the instant you build them.
-- **Body-Worn Wisplight Customization**: Full cosmetic customization for your equipped Wisplight accessory (the floating `demister_ball` follower orb), including custom color, light and emission intensity multipliers, alpha transparency, and multiplayer color sync.
+- **Body-Worn Wisplight Customization**: Customization for your equipped Wisplight accessory (the floating `demister_ball` follower orb), including custom color, light and emission multipliers, alpha transparency, hip-worn styles, and multiplayer sync.
 - **Multiplayer & Server-Synchronized**: Painted colors are stored on each piece, so every player with the mod sees them. Unpainted pieces use client-chosen defaults or server-enforced color themes, with ward-protection permissions and admin overrides.
 - **No Asset Bundles**: Pieces are cloned from base game prefabs at runtime using Jotunn.
 - **Recipe Editor**: Edit recipes in Configuration Manager with item and amount rows. Borrowed from [Searica](https://github.com/Searica).
@@ -54,7 +54,7 @@ In native Valheim, clearing the thick mist of the Mistlands requires placing doz
 Find these pieces in the Hammer under **Misc** and **Lighting**.
 
 1. **Tier 1: Large Wisp Torch (`piece_wisptorch_heeler_lg`)**:
-   - Cloned from the native wooden wisp torch and scaled physically by **`1.25x`**.
+   - Cloned from the base game wisp torch and scaled physically by **`1.25x`**.
    - **Mist Clearance**: **1.50x** radius (relative to 24.0m baseline: **36.0m** radius, ~2.25x coverage area).
    - **Light**: **1.33x** intensity and **1.25x** range (**12.5m** light radius).
    - **PlayerBase**: **20.0m** base spawn suppression (scales with `PlayerBaseMistRadiusBonus`).
@@ -63,7 +63,7 @@ Find these pieces in the Hammer under **Misc** and **Lighting**.
 
 2. **Tier 2: Small Lamp (`piece_wisplamp_heeler`)**:
    - In-game Name: *Dvergr Wisp Lamp*
-   - Adapts the native Dvergr Demister prop at natural **`1.0x`** scale.
+   - Adapts the base game Dvergr demister prop at natural **`1.0x`** scale.
    - **Mist Clearance**: **2.25x** radius (relative to 24.0m baseline: **54.0m** radius, ~5.0x coverage area).
    - **Light**: **1.50x** intensity and **1.50x** range (**15.0m** light radius).
    - **PlayerBase**: **20.0m** base spawn suppression (scales with `PlayerBaseMistRadiusBonus`).
@@ -103,12 +103,13 @@ Find these pieces in the Hammer under **Misc** and **Lighting**.
 Cosmetic customization for the player-equipped **Wisplight** utility accessory (the flying follower orb, referenced internally and in config as `Demister` / `demister_ball`):
 
 * **Custom Color**: Choose your Wisplight color via `DemisterColor` in the Configuration Manager (F1) or config file.
-* **Point Light & Emission Multipliers**: Scale the Wisplight's point light intensity (`DemisterLightIntensityMultiplier`, 0.1x to 5.0x) and core shader emission brightness (`DemisterEmissionIntensityMultiplier`, 0.1x to 5.0x) independently.
+* **Hip Mount**: `DemisterMountStyle` - `Floating` (base game), `HipOrb` (pin-to-hip) or `HipCage` (hip lantern, takes on the wisplight color). Both hip modes clear mist from the hip and get a small brightness boost.
+* **Point Light & Emission Multipliers**: Scale the Wisplight's point light intensity (`DemisterLightIntensityMultiplier`, 0.1x to 5.0x), light range (`DemisterLightRangeMultiplier`, 0.1x to 5.0x) and core shader emission brightness (`DemisterEmissionIntensityMultiplier`, 0.1x to 5.0x) independently.
 * **Alpha Transparency**: Optional transparency for your Wisplight via `DemisterEnableAlpha`. Clamped to a 15% minimum to prevent invisibility.
-* **Idle Hover Speed & Radius Multipliers**: Scales the Wisplight's idle animation (`DemisterIdleSpeedMultiplier`, 0.0 to 2.0) and wander radius (`DemisterIdleRadiusMultiplier`, 0.0 to 2.0). The default of 1.0 is base game motion. Lower values reduce the fly-like buzzing.
-* **Multiplayer Color Sync**: When enabled (`DemisterSyncMultiplayer`), your Wisplight color is written to the follower orb's ZDO (`wisptorch_demister_color`) and visible to other players running the mod.
-* **Intensity Multipliers Are Client-Local**: Your light and emission intensity settings stay strictly local; other players' Wisplights always render on your screen at default calibrated brightness.
-* **Strictly Cosmetic**: Does not alter mist suppression radius, clearance force fields, or Wisplight equipment stats.
+* **Idle Hover Speed & Radius Multipliers**: Scales the floating Wisplight's idle animation (`DemisterIdleSpeedMultiplier`, 0.0 to 2.0) and wander radius (`DemisterIdleRadiusMultiplier`, 0.0 to 2.0). The default of 1.0 is base game motion. Lower values reduce the fly-like buzzing.
+* **Multiplayer Color Sync**: When enabled (`DemisterSyncMultiplayer`), your Wisplight color is written to the follower orb's ZDO (`wisptorch_demister_color`) and visible to other players running the mod. Hip mode always shares (this setting only covers the color). Without the mod players see the base game ball pinned to the hip.
+* **Light Multipliers Are Client-Local**: Your light intensity, range and emission settings stay strictly local; other players' Wisplights always render on your screen at default calibrated brightness.
+* **Same Mist Radius**: Does not alter mist suppression radius, clearance force fields, or Wisplight equipment stats.
 
 ---
 
@@ -116,7 +117,7 @@ Cosmetic customization for the player-equipped **Wisplight** utility accessory (
 
 Settings can be customized directly in-game using the BepInEx **Configuration Manager** (`F1`, installed separately) or by editing `BepInEx/config/dreamwraith.WispTorchHeeler.cfg`.
 
-On a server, sections 1 to 6 plus `DemisterSyncMultiplayer` are synced from the server. `EnableDemisterCustomization` stays under each player's control unless a server policy file forces it. All other settings stay under each player's control.
+On a server, sections 1 to 6 plus `DemisterSyncMultiplayer` are synced from the server. `EnableDemisterCustomization` and `DemisterMountStyle` stay under each player's control unless a server policy file forces them. All other settings stay under each player's control.
 
 Leave a station empty to allow building anywhere. An unknown station name logs a warning and also removes the station requirement. An invalid recipe is ignored: at startup the default is used and an error is logged, and a live edit keeps the previous recipe. Recipe, station, and piece stat changes apply live to placed pieces.
 
@@ -166,10 +167,12 @@ Leave a station empty to allow building anywhere. An unknown station name logs a
 | `9 - Worn Demister` | `DemisterSyncMultiplayer` | `bool` | `true` | Server-synced. Broadcasts your Wisplight color to your follower orb ZDO so other players with this mod see your custom color. |
 | `9 - Worn Demister` | `DemisterColor` | `Color` | `#B4F0FF` | Active cosmetic color for your Wisplight, particles, and emissive glow. |
 | `9 - Worn Demister` | `DemisterLightIntensityMultiplier` | `float` | `1.0` | Multiplier scaling the brightness of the point light emitted by your Wisplight (0.1 - 5.0). |
+| `9 - Worn Demister` | `DemisterLightRangeMultiplier` | `float` | `1.0` | Multiplier scaling the range radius of the point light emitted by your Wisplight (0.1 - 5.0). The base game range is 10 m for the orb and 8 m for the cage. |
 | `9 - Worn Demister` | `DemisterEmissionIntensityMultiplier` | `float` | `1.0` | Multiplier scaling the shader emission brightness of your Wisplight core ball and glow (0.1 - 5.0). |
 | `9 - Worn Demister` | `DemisterEnableAlpha` | `bool` | `false` | Allows the alpha channel of DemisterColor to customize Wisplight particle and material transparency (safely clamped to 15% floor to prevent invisibility). |
-| `9 - Worn Demister` | `DemisterIdleSpeedMultiplier` | `float` | `1.0` | Multiplier scaling the idle bobbing and fluttering speed of your equipped Wisplight follower orb (0.0 - 2.0; 0.3 is calm, 1.0 is native Valheim speed, 0.0 freezes idle motion). |
-| `9 - Worn Demister` | `DemisterIdleRadiusMultiplier` | `float` | `1.0` | Multiplier scaling the hover and jitter distance of your equipped Wisplight follower orb around your head (0.0 - 2.0; 1.0 is native Valheim distance). |
+| `9 - Worn Demister` | `DemisterIdleSpeedMultiplier` | `float` | `1.0` | Multiplier scaling the idle bobbing and fluttering speed of your equipped Wisplight follower orb (0.0 - 2.0; 0.3 is calm, 1.0 is base game speed, 0.0 freezes idle motion). |
+| `9 - Worn Demister` | `DemisterIdleRadiusMultiplier` | `float` | `1.0` | Multiplier scaling the hover and jitter distance of your equipped Wisplight follower orb around your head (0.0 - 2.0; 1.0 is base game distance). |
+| `9 - Worn Demister` | `DemisterMountStyle` | `enum` | `Floating` | Sets how your Wisplight is carried. `Floating` keeps the base game follower orb, `HipOrb` shows a still orb on your hip, and `HipCage` shows a caged lantern on your hip. Both hip styles move the mist clearance center to your hip and use a brighter light to make up for the lower position. |
 | `10 - Debug` | `EnableDebugLogs` | `bool` | `false` | Enables verbose diagnostic logging in the BepInEx console. |
 | `10 - Debug` | `ShowMistSuppressionRadius` | `bool` | `false` | Projects a ground boundary ring around wisp torches and lamps showing their active mist suppression radius. |
 
@@ -178,8 +181,8 @@ Leave a station empty to allow building anywhere. An unknown station name logs a
 ## Compatibility
 
 - **Dedicated Servers**: Works with dedicated servers and singleplayer worlds. Server-synced balance and policy settings are enforced on connecting clients via `ConditionalConfigSync`. Server administrators can release individual settings to clients through policy files in `BepInEx/config/shudnal.ConditionalConfigSync/`.
-- **Native Wisp Torches**: Works with native Mistlands wisp torches (`piece_groundtorch_mist`) when `AffectNativeMistTorches` is enabled.
-- **Ward Protection**: Integrates with native Valheim wards (`PrivateArea`) to prevent unauthorized painting within protected territories.
+- **Base Game Wisp Torches**: Works with base game Mistlands wisp torches (`piece_groundtorch_mist`) when `AffectNativeMistTorches` is enabled.
+- **Ward Protection**: Integrates with base game wards (`PrivateArea`) to prevent unauthorized painting within protected territories.
 - **Mod Managers**: Works with **Gale**, **Thunderstore Mod Manager**, and **r2modman**.
 
 ---

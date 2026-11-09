@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Jotunn;
+using BepInEx.Configuration;
 using Jotunn.Configs;
 using Jotunn.Entities;
 using Jotunn.Managers;
@@ -28,8 +28,6 @@ namespace WispTorchHeeler.Pieces
         public const float NativeMistClearRadius = 24.0f;
         public const float NativeLightRange = 10.0f;
 
-        private static bool s_piecesRegistered;
-
         public class PieceBaseStats
         {
             public float BaseHealth;
@@ -39,31 +37,55 @@ namespace WispTorchHeeler.Pieces
             public float[] LightRanges = Array.Empty<float>();
         }
 
+        // everything that differs between the four pieces, the config entries drive the live updates
+        public record struct PieceTier(
+            string PrefabName,
+            string BasePrefabName,
+            string NameToken,
+            string DescriptionToken,
+            float ScaleFactor,
+            Vector3 ColliderCenter,
+            Vector3 ColliderSize,
+            string? PlaceEffectSource,
+            string? WearEffectSource,
+            ConfigEntry<string> Recipe,
+            ConfigEntry<string> CraftingStation,
+            ConfigEntry<float> Health,
+            ConfigEntry<float> MistClearRangeMultiplier,
+            ConfigEntry<float> LightIntensityMultiplier,
+            ConfigEntry<float> LightRangeMultiplier);
+
         public static readonly Dictionary<string, PieceBaseStats> BaseStats = new();
+
+        // the array keeps registration order, the dictionary is for lookups by prefab name
+        private static PieceTier[] s_tiers = Array.Empty<PieceTier>();
+        private static Dictionary<string, PieceTier> s_tiersByPrefab = new();
+
+        public static IReadOnlyList<PieceTier> Tiers => s_tiers;
 
         private static GameObject? s_areaMarkerTemplate;
         public static GameObject? AreaMarkerTemplate
         {
             get
             {
-                if (s_areaMarkerTemplate == null)
+                if (!s_areaMarkerTemplate)
                 {
-                    var guardStone = PrefabManager.Instance != null ? PrefabManager.Instance.GetPrefab("guard_stone") : (ZNetScene.instance != null ? ZNetScene.instance.GetPrefab("guard_stone") : null);
-                    if (guardStone != null)
+                    GameObject guardStone = PrefabManager.Instance.GetPrefab("guard_stone");
+                    if (guardStone)
                     {
-                        var privateArea = guardStone.GetComponent<PrivateArea>();
-                        if (privateArea != null && privateArea.m_areaMarker != null)
+                        PrivateArea privateArea = guardStone.GetComponent<PrivateArea>();
+                        if (privateArea && privateArea.m_areaMarker)
                         {
                             s_areaMarkerTemplate = privateArea.m_areaMarker.gameObject;
                         }
                     }
-                    if (s_areaMarkerTemplate == null)
+                    if (!s_areaMarkerTemplate)
                     {
-                        var workbench = PrefabManager.Instance != null ? PrefabManager.Instance.GetPrefab("piece_workbench") : (ZNetScene.instance != null ? ZNetScene.instance.GetPrefab("piece_workbench") : null);
-                        if (workbench != null)
+                        GameObject workbench = PrefabManager.Instance.GetPrefab("piece_workbench");
+                        if (workbench)
                         {
-                            var craftingStation = workbench.GetComponent<CraftingStation>();
-                            if (craftingStation != null && craftingStation.m_areaMarker != null)
+                            CraftingStation craftingStation = workbench.GetComponent<CraftingStation>();
+                            if (craftingStation && craftingStation.m_areaMarker)
                             {
                                 s_areaMarkerTemplate = craftingStation.m_areaMarker;
                             }
@@ -74,337 +96,97 @@ namespace WispTorchHeeler.Pieces
             }
         }
 
+        // runs after ModConfig.Initialize so the tier table can hold the bound entries
         public static void Initialize()
         {
-            PrefabManager.OnVanillaPrefabsAvailable += RegisterCustomPieces;
+            s_tiers = CreateTiers();
+            s_tiersByPrefab = s_tiers.ToDictionary(tier => tier.PrefabName);
+
             PieceManager.OnPiecesRegistered += OnPiecesRegistered;
 
-            // Hook config updates to re-apply recipes, stations, and properties in real time
-            ModConfig.Torch_Recipe.SettingChanged += (sender, eventArgs) => UpdatePieceConfiguration(Tier1TorchPrefab);
-            ModConfig.Torch_CraftingStation.SettingChanged += (sender, eventArgs) => UpdatePieceConfiguration(Tier1TorchPrefab);
-            ModConfig.Torch_Health.SettingChanged += (sender, eventArgs) => UpdatePieceConfiguration(Tier1TorchPrefab);
-            ModConfig.Torch_MistClearRangeMultiplier.SettingChanged += (sender, eventArgs) => UpdatePieceConfiguration(Tier1TorchPrefab);
-            ModConfig.Torch_LightIntensityMultiplier.SettingChanged += (sender, eventArgs) => UpdatePieceConfiguration(Tier1TorchPrefab);
-            ModConfig.Torch_LightRangeMultiplier.SettingChanged += (sender, eventArgs) => UpdatePieceConfiguration(Tier1TorchPrefab);
-
-            ModConfig.SmallLamp_Recipe.SettingChanged += (sender, eventArgs) => UpdatePieceConfiguration(Tier2SmallLampPrefab);
-            ModConfig.SmallLamp_CraftingStation.SettingChanged += (sender, eventArgs) => UpdatePieceConfiguration(Tier2SmallLampPrefab);
-            ModConfig.SmallLamp_Health.SettingChanged += (sender, eventArgs) => UpdatePieceConfiguration(Tier2SmallLampPrefab);
-            ModConfig.SmallLamp_MistClearRangeMultiplier.SettingChanged += (sender, eventArgs) => UpdatePieceConfiguration(Tier2SmallLampPrefab);
-            ModConfig.SmallLamp_LightIntensityMultiplier.SettingChanged += (sender, eventArgs) => UpdatePieceConfiguration(Tier2SmallLampPrefab);
-            ModConfig.SmallLamp_LightRangeMultiplier.SettingChanged += (sender, eventArgs) => UpdatePieceConfiguration(Tier2SmallLampPrefab);
-
-            ModConfig.LargeLamp_Recipe.SettingChanged += (sender, eventArgs) => UpdatePieceConfiguration(Tier3LargeLampPrefab);
-            ModConfig.LargeLamp_CraftingStation.SettingChanged += (sender, eventArgs) => UpdatePieceConfiguration(Tier3LargeLampPrefab);
-            ModConfig.LargeLamp_Health.SettingChanged += (sender, eventArgs) => UpdatePieceConfiguration(Tier3LargeLampPrefab);
-            ModConfig.LargeLamp_MistClearRangeMultiplier.SettingChanged += (sender, eventArgs) => UpdatePieceConfiguration(Tier3LargeLampPrefab);
-            ModConfig.LargeLamp_LightIntensityMultiplier.SettingChanged += (sender, eventArgs) => UpdatePieceConfiguration(Tier3LargeLampPrefab);
-            ModConfig.LargeLamp_LightRangeMultiplier.SettingChanged += (sender, eventArgs) => UpdatePieceConfiguration(Tier3LargeLampPrefab);
-
-            ModConfig.GrandLamp_Recipe.SettingChanged += (sender, eventArgs) => UpdatePieceConfiguration(Tier4GrandLampPrefab);
-            ModConfig.GrandLamp_CraftingStation.SettingChanged += (sender, eventArgs) => UpdatePieceConfiguration(Tier4GrandLampPrefab);
-            ModConfig.GrandLamp_Health.SettingChanged += (sender, eventArgs) => UpdatePieceConfiguration(Tier4GrandLampPrefab);
-            ModConfig.GrandLamp_MistClearRangeMultiplier.SettingChanged += (sender, eventArgs) => UpdatePieceConfiguration(Tier4GrandLampPrefab);
-            ModConfig.GrandLamp_LightIntensityMultiplier.SettingChanged += (sender, eventArgs) => UpdatePieceConfiguration(Tier4GrandLampPrefab);
-            ModConfig.GrandLamp_LightRangeMultiplier.SettingChanged += (sender, eventArgs) => UpdatePieceConfiguration(Tier4GrandLampPrefab);
+            foreach (PieceTier tier in s_tiers)
+            {
+                EventHandler tierChangedHandler = (sender, eventArgs) => UpdatePieceConfiguration(tier);
+                tier.Recipe.SettingChanged += tierChangedHandler;
+                tier.CraftingStation.SettingChanged += tierChangedHandler;
+                tier.Health.SettingChanged += tierChangedHandler;
+                tier.MistClearRangeMultiplier.SettingChanged += tierChangedHandler;
+                tier.LightIntensityMultiplier.SettingChanged += tierChangedHandler;
+                tier.LightRangeMultiplier.SettingChanged += tierChangedHandler;
+            }
 
             ModConfig.PlayerBaseMistRadiusBonus.SettingChanged += (sender, eventArgs) => UpdateAllPieceConfigurations();
 
-            Plugin.LogDebug("[PieceManager] Subscribed to native prefab, piece lifecycle, and config property events.");
+            Plugin.LogDebug("[PieceManager] Subscribed to piece lifecycle and config property events.");
         }
 
-        private static void RegisterCustomPieces()
+        private static PieceTier[] CreateTiers() => new[]
         {
-            if (s_piecesRegistered) return;
-            s_piecesRegistered = true;
-
-            Plugin.LogDebug("[PieceManager] RegisterCustomPieces triggered.");
-
-            // 1. Inject WispTorchColorController into native mist torch
-            var nativeTorch = PrefabManager.Instance.GetPrefab(NativeMistTorchPrefab);
-            if (nativeTorch != null)
-            {
-                if (nativeTorch.GetComponent<WispTorchColorController>() == null)
-                {
-                    nativeTorch.AddComponent<WispTorchColorController>();
-                    Plugin.LogDebug($"[PieceManager] Injected WispTorchColorController into native prefab '{NativeMistTorchPrefab}'.");
-                }
-
-                EnsurePieceCollider(nativeTorch, new Vector3(0f, 0.025f, 0f), new Vector3(0.25f, 1.35f, 0.25f));
-            }
-            else
-            {
-                Plugin.Log.LogWarning($"[PieceManager] Native prefab '{NativeMistTorchPrefab}' not found for controller injection.");
-            }
-
-            // 2. Register Tier 1: Large Wisp Torch (scaled 1.25x by Unity, retains normal torch sounds)
-            RegisterPiece(
-                customPrefabName: Tier1TorchPrefab,
-                basePrefabName: NativeMistTorchPrefab,
-                nameToken: Localization.ModLocalization.TokenPieceTorchLg,
-                descriptionToken: Localization.ModLocalization.TokenPieceTorchLgDesc,
-                scaleFactor: 1.25f,
-                recipeString: ModConfig.Torch_Recipe.Value,
-                defaultRecipeString: (string)ModConfig.Torch_Recipe.DefaultValue,
-                stationString: ModConfig.Torch_CraftingStation.Value,
-                colliderCenter: new Vector3(0f, 0.025f, 0f),
-                colliderSize: new Vector3(0.25f, 1.35f, 0.25f)
-            );
-
-            // 3. Register Tier 2: Small Wisp Lamp (scale 1.0x, walltorch build sound, dvergr lantern destroy/hit sounds)
-            RegisterPiece(
-                customPrefabName: Tier2SmallLampPrefab,
-                basePrefabName: NativeDemisterPrefab,
-                nameToken: Localization.ModLocalization.TokenPieceSmallLamp,
-                descriptionToken: Localization.ModLocalization.TokenPieceSmallLampDesc,
-                scaleFactor: 1.0f,
-                recipeString: ModConfig.SmallLamp_Recipe.Value,
-                defaultRecipeString: (string)ModConfig.SmallLamp_Recipe.DefaultValue,
-                stationString: ModConfig.SmallLamp_CraftingStation.Value,
-                colliderCenter: new Vector3(0f, -0.10f, 0f),
-                colliderSize: new Vector3(0.26f, 1.10f, 0.26f),
-                placeEffectSource: NativeWallTorchPrefab,
-                wearEffectSource: NativeDvergrLanternPrefab
-            );
-
-            // 4. Register Tier 3: Large Dvergr Lamp (scaled 1.1x by Unity, walltorch build sound, dvergr lantern destroy/hit sounds)
-            RegisterPiece(
-                customPrefabName: Tier3LargeLampPrefab,
-                basePrefabName: NativeDemisterLargePrefab,
-                nameToken: Localization.ModLocalization.TokenPieceLampLg,
-                descriptionToken: Localization.ModLocalization.TokenPieceLampLgDesc,
-                scaleFactor: 1.1f,
-                recipeString: ModConfig.LargeLamp_Recipe.Value,
-                defaultRecipeString: (string)ModConfig.LargeLamp_Recipe.DefaultValue,
-                stationString: ModConfig.LargeLamp_CraftingStation.Value,
-                colliderCenter: new Vector3(0f, -0.18f, 0f),
-                colliderSize: new Vector3(0.32f, 1.45f, 0.32f),
-                placeEffectSource: NativeWallTorchPrefab,
-                wearEffectSource: NativeDvergrLanternPrefab
-            );
-
-            // 5. Register Tier 4: Grand Dvergr Lamp (scaled 1.5x by Unity, walltorch build sound, dvergr lantern destroy/hit sounds)
-            RegisterPiece(
-                customPrefabName: Tier4GrandLampPrefab,
-                basePrefabName: NativeDemisterLargePrefab,
-                nameToken: Localization.ModLocalization.TokenPieceLampGrand,
-                descriptionToken: Localization.ModLocalization.TokenPieceLampGrandDesc,
-                scaleFactor: 1.5f,
-                recipeString: ModConfig.GrandLamp_Recipe.Value,
-                defaultRecipeString: (string)ModConfig.GrandLamp_Recipe.DefaultValue,
-                stationString: ModConfig.GrandLamp_CraftingStation.Value,
-                colliderCenter: new Vector3(0f, -0.18f, 0f),
-                colliderSize: new Vector3(0.32f, 1.45f, 0.32f),
-                placeEffectSource: NativeWallTorchPrefab,
-                wearEffectSource: NativeDvergrLanternPrefab
-            );
-
-            // Unsubscribe from PrefabManager event to prevent redundant registrations
-            PrefabManager.OnVanillaPrefabsAvailable -= RegisterCustomPieces;
-        }
-
-        private static void RegisterPiece(
-            string customPrefabName,
-            string basePrefabName,
-            string nameToken,
-            string descriptionToken,
-            float scaleFactor,
-            string recipeString,
-            string defaultRecipeString,
-            string stationString,
-            in Vector3 colliderCenter,
-            in Vector3 colliderSize,
-            string? placeEffectSource = null,
-            string? wearEffectSource = null)
-        {
-            // 1. Strict Validation: Validate recipe before instantiating or cloning any prefab
-            if (!TryParseAndValidateRecipe(recipeString, customPrefabName, out var requirements))
-            {
-                Plugin.Log.LogError($"[PieceManager] Config recipe for piece '{customPrefabName}' is invalid ('{recipeString}'). Falling back to default recipe: '{defaultRecipeString}'.");
-                if (!TryParseAndValidateRecipe(defaultRecipeString, customPrefabName, out requirements))
-                {
-                    Plugin.Log.LogError($"[PieceManager] Default recipe for piece '{customPrefabName}' is also invalid ('{defaultRecipeString}'). Aborting piece registration.");
-                    return;
-                }
-            }
-
-            GameObject clonedGameObject = PrefabManager.Instance.CreateClonedPrefab(customPrefabName, basePrefabName);
-            if (clonedGameObject == null)
-            {
-                Plugin.Log.LogError($"[PieceManager] Failed to clone prefab '{basePrefabName}' as '{customPrefabName}'.");
-                return;
-            }
-
-            // Snapshot unmultiplied base stats from cloned prefab before applying any multipliers
-            var rawForceFields = clonedGameObject.GetComponentsInChildren<ParticleSystemForceField>(true);
-            var rawLights = clonedGameObject.GetComponentsInChildren<Light>(true);
-            var rawWearNTear = clonedGameObject.GetComponent<WearNTear>();
-
-            var baseStats = new PieceBaseStats
-            {
-                BaseHealth = rawWearNTear != null ? rawWearNTear.m_health : 100f,
-                ForceFieldStartRanges = new float[rawForceFields.Length],
-                ForceFieldEndRanges = new float[rawForceFields.Length],
-                LightIntensities = new float[rawLights.Length],
-                LightRanges = new float[rawLights.Length]
-            };
-
-            for (int forceFieldIndex = 0; forceFieldIndex < rawForceFields.Length; forceFieldIndex++)
-            {
-                baseStats.ForceFieldStartRanges[forceFieldIndex] = rawForceFields[forceFieldIndex].startRange;
-                baseStats.ForceFieldEndRanges[forceFieldIndex] = NativeMistClearRadius;
-            }
-
-            for (int lightIndex = 0; lightIndex < rawLights.Length; lightIndex++)
-            {
-                // All donor prefabs (piece_groundtorch_mist, dverger_demister, dverger_demister_large) natively share 
-                // a 1.0f light intensity; capturing raw intensity preserves that 1.0 baseline and any multi-light ratios.
-                baseStats.LightIntensities[lightIndex] = rawLights[lightIndex].intensity;
-                baseStats.LightRanges[lightIndex] = NativeLightRange;
-            }
-
-            BaseStats[customPrefabName] = baseStats;
-
-            // Apply static physical scaling
-            if (Mathf.Abs(scaleFactor - 1.0f) > 0.001f)
-            {
-                clonedGameObject.transform.localScale = clonedGameObject.transform.localScale * scaleFactor;
-                Plugin.LogDebug($"[PieceManager] Scaled '{customPrefabName}' by {scaleFactor}x.");
-            }
-
-            // Ensure ZNetView exists
-            var netView = clonedGameObject.GetComponent<ZNetView>();
-            if (netView == null)
-            {
-                netView = clonedGameObject.AddComponent<ZNetView>();
-                netView.m_syncInitialScale = true;
-            }
-
-            // Ensure Piece component exists and is configured for building hammer
-            var piece = clonedGameObject.GetComponent<Piece>();
-            if (piece == null)
-            {
-                piece = clonedGameObject.AddComponent<Piece>();
-            }
-            piece.m_name = nameToken;
-            piece.m_description = descriptionToken;
-            piece.m_canBeRemoved = true;
-            piece.m_category = Piece.PieceCategory.Misc;
-
-            // Configure HoverText component so Valheim native hover displays the piece name token
-            var hoverText = clonedGameObject.GetComponent<HoverText>();
-            if (hoverText == null)
-            {
-                hoverText = clonedGameObject.AddComponent<HoverText>();
-            }
-            hoverText.m_text = nameToken;
-
-            // Configure placement sound and VFX if an override source is specified
-            if (!string.IsNullOrEmpty(placeEffectSource))
-            {
-                var placeSourcePiece = PrefabManager.Instance.GetPrefab(placeEffectSource)?.GetComponent<Piece>();
-                if (placeSourcePiece != null && placeSourcePiece.m_placeEffect != null)
-                {
-                    piece.m_placeEffect = placeSourcePiece.m_placeEffect;
-                }
-            }
-
-            // Initial fallback icon
-            if (piece.m_icon == null)
-            {
-                var nativeTorch = PrefabManager.Instance.GetPrefab(NativeMistTorchPrefab);
-                var nativePiece = nativeTorch != null ? nativeTorch.GetComponent<Piece>() : null;
-                if (nativePiece != null && nativePiece.m_icon != null)
-                {
-                    piece.m_icon = nativePiece.m_icon;
-                }
-            }
-
-            // Generate high-fidelity 3D model snapshot icon via Jotunn RenderManager
-            try
-            {
-                var customIcon = RenderManager.Instance.Render(clonedGameObject);
-                if (customIcon != null)
-                {
-                    piece.m_icon = customIcon;
-                    Plugin.LogDebug($"[PieceManager] Generated custom 3D snapshot icon for '{customPrefabName}'.");
-                }
-            }
-            catch (Exception exception)
-            {
-                Plugin.Log.LogWarning($"[PieceManager] Failed to render 3D icon for '{customPrefabName}': {exception.Message}");
-            }
-
-            // Ensure WearNTear component exists with weather decay immunity
-            var wearNTear = clonedGameObject.GetComponent<WearNTear>();
-            if (wearNTear == null)
-            {
-                wearNTear = clonedGameObject.AddComponent<WearNTear>();
-            }
-            // why the actual fuck iron gate used this name idk, but m_noRoofWear = false means it won't decay from weather
-            // and m_noSupportWear = true means it won't decay from lack of support
-            wearNTear.m_noRoofWear = false;
-            wearNTear.m_noSupportWear = true;
-
-            // Configure hit and destruction sounds if an override source is specified
-            if (!string.IsNullOrEmpty(wearEffectSource))
-            {
-                var wearSource = PrefabManager.Instance.GetPrefab(wearEffectSource)?.GetComponent<WearNTear>();
-                if (wearSource != null)
-                {
-                    wearNTear.m_hitEffect = wearSource.m_hitEffect;
-                    wearNTear.m_destroyedEffect = wearSource.m_destroyedEffect;
-                }
-            }
-
-            // Ensure physical colliders are on the 'piece' layer so the building hammer can target, repair, and deconstruct it.
-            // Never promote trigger colliders (such as the native torch's PlayerBase EffectArea SphereCollider),
-            // as placing triggers on physical layers causes Plant.HaveGrowSpace() to detect them as physical obstructions.
-            int pieceLayer = LayerMask.NameToLayer("piece");
-            if (pieceLayer >= 0)
-            {
-                clonedGameObject.layer = pieceLayer;
-                foreach (var collider in clonedGameObject.GetComponentsInChildren<Collider>(true))
-                {
-                    if (!collider.isTrigger)
-                    {
-                        collider.gameObject.layer = pieceLayer;
-                    }
-                }
-            }
-
-            // Ensure a right-sized BoxCollider exists on the piece root
-            EnsurePieceCollider(clonedGameObject, in colliderCenter, in colliderSize);
-
-            // Ensure PlayerBase exists for mob spawn suppression and base structure recognition
-            EnsurePlayerBase(clonedGameObject);
-
-            // Apply initial physical properties (force field mist clearance, light intensity/range, health)
-            ApplyProperties(clonedGameObject, customPrefabName);
-
-            // Attach dynamic color controller
-            if (clonedGameObject.GetComponent<WispTorchColorController>() == null)
-            {
-                clonedGameObject.AddComponent<WispTorchColorController>();
-            }
-
-            // Register CustomPiece via Jotunn with Valheim 1.0 build menu categories & usage tags
-            var pieceConfig = new PieceConfig
-            {
-                Name = nameToken,
-                Description = descriptionToken,
-                PieceTable = PieceTables.Hammer,
-                Category = PieceCategories.Misc,
-                Usage = new[] { PieceUsages.Lighting, PieceUsages.Misc },
-                CraftingStation = stationString,
-                Requirements = requirements
-            };
-
-            var customPiece = new CustomPiece(clonedGameObject, fixReference: true, pieceConfig);
-            PieceManager.Instance.AddPiece(customPiece);
-
-            Plugin.LogDebug($"[PieceManager] Successfully registered CustomPiece '{customPrefabName}' in Hammer (Category=Misc, Usages=Lighting,Misc).");
-        }
+            new PieceTier(
+                PrefabName: Tier1TorchPrefab,
+                BasePrefabName: NativeMistTorchPrefab,
+                NameToken: Localization.ModLocalization.TokenPieceTorchLg,
+                DescriptionToken: Localization.ModLocalization.TokenPieceTorchLgDesc,
+                ScaleFactor: 1.25f,
+                ColliderCenter: new Vector3(0f, 0.025f, 0f),
+                ColliderSize: new Vector3(0.25f, 1.35f, 0.25f),
+                PlaceEffectSource: null,
+                WearEffectSource: null,
+                Recipe: ModConfig.Torch_Recipe,
+                CraftingStation: ModConfig.Torch_CraftingStation,
+                Health: ModConfig.Torch_Health,
+                MistClearRangeMultiplier: ModConfig.Torch_MistClearRangeMultiplier,
+                LightIntensityMultiplier: ModConfig.Torch_LightIntensityMultiplier,
+                LightRangeMultiplier: ModConfig.Torch_LightRangeMultiplier),
+            new PieceTier(
+                PrefabName: Tier2SmallLampPrefab,
+                BasePrefabName: NativeDemisterPrefab,
+                NameToken: Localization.ModLocalization.TokenPieceSmallLamp,
+                DescriptionToken: Localization.ModLocalization.TokenPieceSmallLampDesc,
+                ScaleFactor: 1.0f,
+                ColliderCenter: new Vector3(0f, -0.10f, 0f),
+                ColliderSize: new Vector3(0.26f, 1.10f, 0.26f),
+                PlaceEffectSource: NativeWallTorchPrefab,
+                WearEffectSource: NativeDvergrLanternPrefab,
+                Recipe: ModConfig.SmallLamp_Recipe,
+                CraftingStation: ModConfig.SmallLamp_CraftingStation,
+                Health: ModConfig.SmallLamp_Health,
+                MistClearRangeMultiplier: ModConfig.SmallLamp_MistClearRangeMultiplier,
+                LightIntensityMultiplier: ModConfig.SmallLamp_LightIntensityMultiplier,
+                LightRangeMultiplier: ModConfig.SmallLamp_LightRangeMultiplier),
+            new PieceTier(
+                PrefabName: Tier3LargeLampPrefab,
+                BasePrefabName: NativeDemisterLargePrefab,
+                NameToken: Localization.ModLocalization.TokenPieceLampLg,
+                DescriptionToken: Localization.ModLocalization.TokenPieceLampLgDesc,
+                ScaleFactor: 1.1f,
+                ColliderCenter: new Vector3(0f, -0.18f, 0f),
+                ColliderSize: new Vector3(0.32f, 1.45f, 0.32f),
+                PlaceEffectSource: NativeWallTorchPrefab,
+                WearEffectSource: NativeDvergrLanternPrefab,
+                Recipe: ModConfig.LargeLamp_Recipe,
+                CraftingStation: ModConfig.LargeLamp_CraftingStation,
+                Health: ModConfig.LargeLamp_Health,
+                MistClearRangeMultiplier: ModConfig.LargeLamp_MistClearRangeMultiplier,
+                LightIntensityMultiplier: ModConfig.LargeLamp_LightIntensityMultiplier,
+                LightRangeMultiplier: ModConfig.LargeLamp_LightRangeMultiplier),
+            new PieceTier(
+                PrefabName: Tier4GrandLampPrefab,
+                BasePrefabName: NativeDemisterLargePrefab,
+                NameToken: Localization.ModLocalization.TokenPieceLampGrand,
+                DescriptionToken: Localization.ModLocalization.TokenPieceLampGrandDesc,
+                ScaleFactor: 1.5f,
+                ColliderCenter: new Vector3(0f, -0.18f, 0f),
+                ColliderSize: new Vector3(0.32f, 1.45f, 0.32f),
+                PlaceEffectSource: NativeWallTorchPrefab,
+                WearEffectSource: NativeDvergrLanternPrefab,
+                Recipe: ModConfig.GrandLamp_Recipe,
+                CraftingStation: ModConfig.GrandLamp_CraftingStation,
+                Health: ModConfig.GrandLamp_Health,
+                MistClearRangeMultiplier: ModConfig.GrandLamp_MistClearRangeMultiplier,
+                LightIntensityMultiplier: ModConfig.GrandLamp_LightIntensityMultiplier,
+                LightRangeMultiplier: ModConfig.GrandLamp_LightRangeMultiplier)
+        };
 
         private static void OnPiecesRegistered()
         {
@@ -414,44 +196,38 @@ namespace WispTorchHeeler.Pieces
 
         public static void UpdateAllPieceConfigurations()
         {
-            UpdatePieceConfiguration(Tier1TorchPrefab);
-            UpdatePieceConfiguration(Tier2SmallLampPrefab);
-            UpdatePieceConfiguration(Tier3LargeLampPrefab);
-            UpdatePieceConfiguration(Tier4GrandLampPrefab);
+            foreach (PieceTier tier in s_tiers)
+            {
+                UpdatePieceConfiguration(tier);
+            }
         }
 
-        public static void UpdatePieceConfiguration(string prefabName)
+        public static void UpdatePieceConfiguration(PieceTier tier)
         {
-            // Do not execute runtime piece updates in the main menu; defer until the game world is loaded
+            string prefabName = tier.PrefabName;
             if (SceneManager.GetActiveScene().name != "main")
             {
                 Plugin.LogDebug($"[PieceManager] Active scene is '{SceneManager.GetActiveScene().name}'. Deferring piece update for '{prefabName}' until game world loads.");
                 return;
             }
 
-            var customPiece = PieceManager.Instance.GetPiece(prefabName);
-            if (customPiece == null || customPiece.PiecePrefab == null)
+            CustomPiece customPiece = PieceManager.Instance.GetPiece(prefabName);
+            if (customPiece == null || !customPiece.PiecePrefab)
             {
                 Plugin.LogDebug($"[PieceManager] CustomPiece '{prefabName}' not found in PieceManager registry for config update.");
                 return;
             }
 
-            if (!TryGetPieceConfig(prefabName, out string recipeString, out string stationString, out _, out _, out _, out _))
-            {
-                return;
-            }
+            Piece piece = customPiece.PiecePrefab.GetComponent<Piece>();
 
-            var piece = customPiece.PiecePrefab.GetComponent<Piece>();
-
-            // 1. Recipe
-            if (TryParseAndValidateRecipe(recipeString, prefabName, out var requirements))
+            if (TryParseAndValidateRecipe(tier.Recipe.Value, prefabName, out RequirementConfig[] requirements))
             {
-                var pieceRequirements = new List<Piece.Requirement>();
-                foreach (var requirementConfig in requirements)
+                List<Piece.Requirement> pieceRequirements = new List<Piece.Requirement>();
+                foreach (RequirementConfig requirementConfig in requirements)
                 {
-                    var itemPrefab = PrefabManager.Instance.GetPrefab(requirementConfig.Item);
-                    var itemDrop = itemPrefab != null ? itemPrefab.GetComponent<ItemDrop>() : null;
-                    if (itemDrop != null)
+                    GameObject itemPrefab = PrefabManager.Instance.GetPrefab(requirementConfig.Item);
+                    ItemDrop? itemDrop = itemPrefab ? itemPrefab.GetComponent<ItemDrop>() : null;
+                    if (itemDrop)
                     {
                         pieceRequirements.Add(new Piece.Requirement
                         {
@@ -467,7 +243,7 @@ namespace WispTorchHeeler.Pieces
                     }
                 }
 
-                if (piece != null)
+                if (piece)
                 {
                     piece.m_resources = pieceRequirements.ToArray();
                 }
@@ -477,18 +253,17 @@ namespace WispTorchHeeler.Pieces
                 Plugin.Log.LogError($"[PieceManager] Rejecting recipe update for piece '{prefabName}' due to validation errors. Keeping existing recipe.");
             }
 
-            // 2. Direct CraftingStation assignment
-            if (piece != null)
+            if (piece)
             {
-                string stationName = CraftingStations.GetInternalName(stationString);
+                string stationName = CraftingStations.GetInternalName(tier.CraftingStation.Value);
                 if (string.IsNullOrEmpty(stationName) || stationName.Equals("None", StringComparison.OrdinalIgnoreCase))
                 {
                     piece.m_craftingStation = null;
                 }
                 else
                 {
-                    var stationPrefab = PrefabManager.Instance.GetPrefab(stationName);
-                    if (stationPrefab != null)
+                    GameObject stationPrefab = PrefabManager.Instance.GetPrefab(stationName);
+                    if (stationPrefab)
                     {
                         piece.m_craftingStation = stationPrefab.GetComponent<CraftingStation>();
                     }
@@ -500,13 +275,10 @@ namespace WispTorchHeeler.Pieces
                 }
             }
 
-            // 3. Update Prefab physical properties (force fields, lights, health)
             ApplyProperties(customPiece.PiecePrefab, prefabName);
-
-            // 4. Update all live instances in the world
             Lighting.WispTorchColorController.RefreshPropertiesForPrefab(prefabName);
 
-            if (Player.m_localPlayer != null)
+            if (Player.m_localPlayer)
             {
                 Player.m_localPlayer.UpdateKnownRecipesList();
                 Player.m_localPlayer.UpdateAvailablePiecesList();
@@ -515,113 +287,53 @@ namespace WispTorchHeeler.Pieces
             Plugin.LogDebug($"[PieceManager] Updated '{prefabName}' configuration in real time.");
         }
 
-        public static bool TryGetPieceConfig(
-            string prefabName,
-            out string recipeString,
-            out string stationString,
-            out float health,
-            out float mistClearRangeMultiplier,
-            out float lightIntensityMultiplier,
-            out float lightRangeMultiplier)
-        {
-            if (prefabName == Tier1TorchPrefab)
-            {
-                recipeString = ModConfig.Torch_Recipe.Value;
-                stationString = ModConfig.Torch_CraftingStation.Value;
-                health = ModConfig.Torch_Health.Value;
-                mistClearRangeMultiplier = ModConfig.Torch_MistClearRangeMultiplier.Value;
-                lightIntensityMultiplier = ModConfig.Torch_LightIntensityMultiplier.Value;
-                lightRangeMultiplier = ModConfig.Torch_LightRangeMultiplier.Value;
-                return true;
-            }
-            if (prefabName == Tier2SmallLampPrefab)
-            {
-                recipeString = ModConfig.SmallLamp_Recipe.Value;
-                stationString = ModConfig.SmallLamp_CraftingStation.Value;
-                health = ModConfig.SmallLamp_Health.Value;
-                mistClearRangeMultiplier = ModConfig.SmallLamp_MistClearRangeMultiplier.Value;
-                lightIntensityMultiplier = ModConfig.SmallLamp_LightIntensityMultiplier.Value;
-                lightRangeMultiplier = ModConfig.SmallLamp_LightRangeMultiplier.Value;
-                return true;
-            }
-            if (prefabName == Tier3LargeLampPrefab)
-            {
-                recipeString = ModConfig.LargeLamp_Recipe.Value;
-                stationString = ModConfig.LargeLamp_CraftingStation.Value;
-                health = ModConfig.LargeLamp_Health.Value;
-                mistClearRangeMultiplier = ModConfig.LargeLamp_MistClearRangeMultiplier.Value;
-                lightIntensityMultiplier = ModConfig.LargeLamp_LightIntensityMultiplier.Value;
-                lightRangeMultiplier = ModConfig.LargeLamp_LightRangeMultiplier.Value;
-                return true;
-            }
-            if (prefabName == Tier4GrandLampPrefab)
-            {
-                recipeString = ModConfig.GrandLamp_Recipe.Value;
-                stationString = ModConfig.GrandLamp_CraftingStation.Value;
-                health = ModConfig.GrandLamp_Health.Value;
-                mistClearRangeMultiplier = ModConfig.GrandLamp_MistClearRangeMultiplier.Value;
-                lightIntensityMultiplier = ModConfig.GrandLamp_LightIntensityMultiplier.Value;
-                lightRangeMultiplier = ModConfig.GrandLamp_LightRangeMultiplier.Value;
-                return true;
-            }
-
-            recipeString = string.Empty;
-            stationString = string.Empty;
-            health = 100f;
-            mistClearRangeMultiplier = 1f;
-            lightIntensityMultiplier = 1f;
-            lightRangeMultiplier = 1f;
-            return false;
-        }
-
         public static void ApplyProperties(GameObject targetGameObject, string prefabName)
         {
-            if (targetGameObject == null) return;
-            if (!BaseStats.TryGetValue(prefabName, out var stats)) return;
-            if (!TryGetPieceConfig(prefabName, out _, out _, out float health, out float mistClearRangeMultiplier, out float lightIntensityMultiplier, out float lightRangeMultiplier)) return;
+            if (!BaseStats.TryGetValue(prefabName, out PieceBaseStats stats)) return;
 
-            var forceFields = targetGameObject.GetComponentsInChildren<ParticleSystemForceField>(true);
+            // BaseStats only ever holds registered tiers
+            PieceTier tier = s_tiersByPrefab[prefabName];
+            float mistClearRangeMultiplier = tier.MistClearRangeMultiplier.Value;
+            float lightIntensityMultiplier = tier.LightIntensityMultiplier.Value;
+            float lightRangeMultiplier = tier.LightRangeMultiplier.Value;
+
+            ParticleSystemForceField[] forceFields = targetGameObject.GetComponentsInChildren<ParticleSystemForceField>(true);
             for (int forceFieldIndex = 0; forceFieldIndex < forceFields.Length && forceFieldIndex < stats.ForceFieldStartRanges.Length; forceFieldIndex++)
             {
                 forceFields[forceFieldIndex].startRange = stats.ForceFieldStartRanges[forceFieldIndex] * mistClearRangeMultiplier;
                 forceFields[forceFieldIndex].endRange = stats.ForceFieldEndRanges[forceFieldIndex] * mistClearRangeMultiplier;
             }
 
-            var lights = targetGameObject.GetComponentsInChildren<Light>(true);
+            Light[] lights = targetGameObject.GetComponentsInChildren<Light>(true);
             for (int lightIndex = 0; lightIndex < lights.Length && lightIndex < stats.LightIntensities.Length; lightIndex++)
             {
-                lights[lightIndex].intensity = stats.LightIntensities[lightIndex] * lightIntensityMultiplier;
-                lights[lightIndex].range = stats.LightRanges[lightIndex] * lightRangeMultiplier;
+                WispVisualApplicator.SetLightIntensity(lights[lightIndex], stats.LightIntensities[lightIndex] * lightIntensityMultiplier);
+                WispVisualApplicator.SetLightRange(lights[lightIndex], stats.LightRanges[lightIndex] * lightRangeMultiplier);
             }
 
-            var wearNTear = targetGameObject.GetComponent<WearNTear>();
-            if (wearNTear != null)
+            WearNTear wearNTear = targetGameObject.GetComponent<WearNTear>();
+            if (wearNTear)
             {
-                wearNTear.m_health = health;
+                wearNTear.m_health = tier.Health.Value;
             }
 
-            // Update PlayerBase trigger radius adjusted for model transform scale
-            var playerBaseTransform = targetGameObject.transform.Find("PlayerBase");
-            if (playerBaseTransform != null)
+            // the trigger radius is local, so the model scale gets divided back out
+            Transform playerBaseTransform = targetGameObject.transform.Find("PlayerBase");
+            if (playerBaseTransform)
             {
-                var sphereCollider = playerBaseTransform.GetComponent<SphereCollider>();
-                if (sphereCollider != null)
+                SphereCollider sphereCollider = playerBaseTransform.GetComponent<SphereCollider>();
+                if (sphereCollider)
                 {
                     float activeMistRadius = NativeMistClearRadius * mistClearRangeMultiplier;
                     float bonus = Mathf.Clamp01(ModConfig.PlayerBaseMistRadiusBonus.Value);
                     float effectivePlayerBaseRadius = NativePlayerBaseRadius + (activeMistRadius - NativePlayerBaseRadius) * bonus;
-                    var lossyScale = targetGameObject.transform.lossyScale;
+                    Vector3 lossyScale = targetGameObject.transform.lossyScale;
                     float scale = Mathf.Max(Mathf.Abs(lossyScale.x), Mathf.Max(Mathf.Abs(lossyScale.y), Mathf.Abs(lossyScale.z)));
                     sphereCollider.radius = scale > 0.001f ? effectivePlayerBaseRadius / scale : effectivePlayerBaseRadius;
                 }
             }
         }
 
-        /// <summary>
-        /// Validates that an item prefab exists in the game and has an ItemDrop component attached.
-        /// Rejects empty names, placeholders like &lt;PrefabName&gt;, typos, or non-item prefabs.
-        /// No data scrubbing or alias guessing is performed.
-        /// </summary>
         public static bool IsValidItemPrefab(string itemName)
         {
             if (string.IsNullOrWhiteSpace(itemName))
@@ -630,16 +342,11 @@ namespace WispTorchHeeler.Pieces
             if (itemName.Equals(RecipeConfigDrawer.DefaultPlaceholderPrefab, StringComparison.OrdinalIgnoreCase))
                 return false;
 
-            // PrefabManager queries Jotunn custom prefabs, ZNetScene, ObjectDB, and native cache
-            var prefab = PrefabManager.Instance.GetPrefab(itemName);
-            return prefab != null && prefab.GetComponent<ItemDrop>() != null;
+            GameObject prefab = PrefabManager.Instance.GetPrefab(itemName);
+            return prefab && prefab.TryGetComponent<ItemDrop>(out _);
         }
 
-        /// <summary>
-        /// Strictly parses and validates a recipe string.
-        /// If any token is malformed, amount &lt;= 0, or any item prefab does not exist in the game,
-        /// logs an explicit error and returns false.
-        /// </summary>
+        // one bad token or missing item fails the whole recipe
         public static bool TryParseAndValidateRecipe(string recipeString, string pieceName, out RequirementConfig[] requirements)
         {
             requirements = Array.Empty<RequirementConfig>();
@@ -650,17 +357,17 @@ namespace WispTorchHeeler.Pieces
                 return false;
             }
 
-            var tokens = recipeString.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+            string[] tokens = recipeString.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
             if (tokens.Length == 0)
             {
                 Plugin.Log.LogError($"[PieceManager] Recipe for piece '{pieceName}' contains no valid tokens ('{recipeString}').");
                 return false;
             }
 
-            var parsedRequirements = new List<RequirementConfig>();
-            foreach (var token in tokens)
+            List<RequirementConfig> parsedRequirements = new List<RequirementConfig>();
+            foreach (string token in tokens)
             {
-                var parts = token.Trim().Split(':');
+                string[] parts = token.Trim().Split(':');
                 if (parts.Length != 2)
                 {
                     Plugin.Log.LogError($"[PieceManager] Recipe for piece '{pieceName}' contains malformed token '{token}'. Expected 'ItemPrefab:Amount'.");
@@ -691,77 +398,6 @@ namespace WispTorchHeeler.Pieces
 
             requirements = parsedRequirements.ToArray();
             return true;
-        }
-
-        /// <summary>
-        /// Ensures a piece root possesses a BoxCollider on the 'piece' layer right-sized to
-        /// the specified center and dimensions, avoiding unnecessary bounding overlaps.
-        /// </summary>
-        private static void EnsurePieceCollider(GameObject targetGameObject, in Vector3 center, in Vector3 size)
-        {
-            if (targetGameObject == null) return;
-
-            var boxCollider = targetGameObject.GetComponent<BoxCollider>();
-            if (boxCollider == null)
-            {
-                boxCollider = targetGameObject.AddComponent<BoxCollider>();
-            }
-
-            int pieceLayer = LayerMask.NameToLayer("piece");
-            if (pieceLayer >= 0)
-            {
-                boxCollider.gameObject.layer = pieceLayer;
-            }
-            boxCollider.isTrigger = false;
-            boxCollider.center = center;
-            boxCollider.size = size;
-        }
-
-        /// <summary>
-        /// Ensures a piece possesses a PlayerBase child object on the 'character_trigger' layer with an
-        /// EffectArea (Type = PlayerBase) and a trigger SphereCollider.
-        /// This provides native mob spawn suppression and counts toward player-base structure detection.
-        /// </summary>
-        private static void EnsurePlayerBase(GameObject targetGameObject)
-        {
-            if (targetGameObject == null) return;
-
-            var playerBaseTransform = targetGameObject.transform.Find("PlayerBase");
-            GameObject playerBaseGo;
-            if (playerBaseTransform != null)
-            {
-                playerBaseGo = playerBaseTransform.gameObject;
-            }
-            else
-            {
-                playerBaseGo = new GameObject("PlayerBase");
-                playerBaseGo.transform.SetParent(targetGameObject.transform, false);
-                playerBaseGo.transform.localPosition = Vector3.zero;
-                playerBaseGo.transform.localRotation = Quaternion.identity;
-            }
-
-            int triggerLayer = LayerMask.NameToLayer("character_trigger");
-            if (triggerLayer >= 0)
-            {
-                playerBaseGo.layer = triggerLayer;
-            }
-
-            var sphereCollider = playerBaseGo.GetComponent<SphereCollider>();
-            if (sphereCollider == null)
-            {
-                sphereCollider = playerBaseGo.AddComponent<SphereCollider>();
-            }
-            sphereCollider.isTrigger = true;
-            sphereCollider.center = Vector3.zero;
-
-            var effectArea = playerBaseGo.GetComponent<EffectArea>();
-            if (effectArea == null)
-            {
-                effectArea = playerBaseGo.AddComponent<EffectArea>();
-            }
-            effectArea.m_type = EffectArea.Type.PlayerBase;
-
-            Plugin.LogDebug($"[PieceManager] Configured PlayerBase on '{targetGameObject.name}' (layer: {playerBaseGo.layer}).");
         }
     }
 }
