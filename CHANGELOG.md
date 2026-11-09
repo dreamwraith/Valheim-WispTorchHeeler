@@ -5,6 +5,21 @@ All notable changes to **WispTorchHeeler** will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0] - 2026-11-08
+
+### Added
+- Hip options for the wisplight in `DemisterMountStyle` - pin-to-hip or hip lantern. The lantern takes on the wisplight color.
+- Wisplight range slider.
+
+### Fixed
+- Light intensity and range sliders on all lights were cycling every frame and resetting to default values... I left stupid things hardcoded.
+- Wisplight hover at 1.0 is actually the game's hover now. I had my own numbers in there even with customization off.
+- Paint and reset prompts aren't one big long line anymore.
+
+### Changed
+- Performance fixes for the wisplight and torch patches.
+- Major code cleanup - repaired copy paste errors (especially those nasty var usages I hate), removed various things I've since learned are against best practices, etc.
+
 ## [1.4.0] - 2026-11-01
 
 ### Fixed
