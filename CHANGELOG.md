@@ -5,6 +5,12 @@ All notable changes to **WispTorchHeeler** will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0] - 2026-11-17
+
+### Added
+- Wisplight light switches off and on with H - mist clearing keeps going in the dark and the wisplight remembers it through unequip and relog. Little candle sound and flame in the wisplight color when it flips.
+- Hip mode wisplights give heat like a lantern (pin-to-hip or hip lantern - not the floating ball). Dries off wetness and warms like a campfire within 3 m - sitting gets Resting and nearby beds or eggs count as near a fire. Shuts off in the Mountains and Deep North unless sheltered or frost resistant. Server setting, on by default.
+
 ## [1.5.0] - 2026-11-08
 
 ### Added

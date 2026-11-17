@@ -103,7 +103,9 @@ Find these pieces in the Hammer under **Misc** and **Lighting**.
 Cosmetic customization for the player-equipped **Wisplight** utility accessory (the flying follower orb, referenced internally and in config as `Demister` / `demister_ball`):
 
 * **Custom Color**: Choose your Wisplight color via `DemisterColor` in the Configuration Manager (F1) or config file.
-* **Hip Mount**: `DemisterMountStyle` - `Floating` (base game), `HipOrb` (pin-to-hip) or `HipCage` (hip lantern, takes on the wisplight color). Both hip modes clear mist from the hip and get a small brightness boost.
+* **Hip Mount**: `DemisterMountStyle` - `Floating` (base game), `HipOrb` (pin-to-hip) or `HipCage` (hip lantern, takes on the wisplight color). Both hip modes clear mist from the hip and get a small brightness boost. Only the hip modes give heat (see Hip Heat).
+* **Light Toggle**: Press **`H`** (configurable via `ToggleDemisterLightHotkey`) to turn the light of your equipped Wisplight off and on. Mist clearance continues while the light is off. The floating ball and `HipOrb` are hidden, and `HipCage` stays on the hip with its light and glow off. The Wisplight item keeps the setting through unequip and relog. Other players see the light off only if they have the mod with `EnableDemisterCustomization` enabled. A sound and a small flame in the Wisplight color play when the light switches (`DemisterLightSwitchEffects`). Requires `EnableDemisterCustomization`.
+* **Hip Heat**: With `EnableDemisterHeat` (server-synced, on by default), a Wisplight worn as `HipOrb` or `HipCage` gives heat like a campfire in a 3 m radius around the hip. Heat dries off Wet faster, removes Cold, gives Resting while sitting, and lets beds and eggs in range count as near a fire. The `Floating` ball gives no heat. Heat stops while the light is off. Other players in range get the heat if they have the mod. Monsters do not avoid it. `DemisterHeatBlockInColdBiomes` (server-synced, on by default) stops the heat in the Mountains and Deep North, except while the wearer is indoors, under shelter, or resistant to frost.
 * **Point Light & Emission Multipliers**: Scale the Wisplight's point light intensity (`DemisterLightIntensityMultiplier`, 0.1x to 5.0x), light range (`DemisterLightRangeMultiplier`, 0.1x to 5.0x) and core shader emission brightness (`DemisterEmissionIntensityMultiplier`, 0.1x to 5.0x) independently.
 * **Alpha Transparency**: Optional transparency for your Wisplight via `DemisterEnableAlpha`. Clamped to a 15% minimum to prevent invisibility.
 * **Idle Hover Speed & Radius Multipliers**: Scales the floating Wisplight's idle animation (`DemisterIdleSpeedMultiplier`, 0.0 to 2.0) and wander radius (`DemisterIdleRadiusMultiplier`, 0.0 to 2.0). The default of 1.0 is base game motion. Lower values reduce the fly-like buzzing.
@@ -117,7 +119,7 @@ Cosmetic customization for the player-equipped **Wisplight** utility accessory (
 
 Settings can be customized directly in-game using the BepInEx **Configuration Manager** (`F1`, installed separately) or by editing `BepInEx/config/dreamwraith.WispTorchHeeler.cfg`.
 
-On a server, sections 1 to 6 plus `DemisterSyncMultiplayer` are synced from the server. `EnableDemisterCustomization` and `DemisterMountStyle` stay under each player's control unless a server policy file forces them. All other settings stay under each player's control.
+On a server, sections 1 to 6 plus `DemisterSyncMultiplayer`, `EnableDemisterHeat`, and `DemisterHeatBlockInColdBiomes` are synced from the server. `EnableDemisterCustomization` and `DemisterMountStyle` stay under each player's control unless a server policy file forces them. All other settings stay under each player's control.
 
 Leave a station empty to allow building anywhere. An unknown station name logs a warning and also removes the station requirement. An invalid recipe is ignored: at startup the default is used and an error is logged, and a live edit keeps the previous recipe. Recipe, station, and piece stat changes apply live to placed pieces.
 
@@ -172,7 +174,11 @@ Leave a station empty to allow building anywhere. An unknown station name logs a
 | `9 - Worn Demister` | `DemisterEnableAlpha` | `bool` | `false` | Allows the alpha channel of DemisterColor to customize Wisplight particle and material transparency (safely clamped to 15% floor to prevent invisibility). |
 | `9 - Worn Demister` | `DemisterIdleSpeedMultiplier` | `float` | `1.0` | Multiplier scaling the idle bobbing and fluttering speed of your equipped Wisplight follower orb (0.0 - 2.0; 0.3 is calm, 1.0 is base game speed, 0.0 freezes idle motion). |
 | `9 - Worn Demister` | `DemisterIdleRadiusMultiplier` | `float` | `1.0` | Multiplier scaling the hover and jitter distance of your equipped Wisplight follower orb around your head (0.0 - 2.0; 1.0 is base game distance). |
-| `9 - Worn Demister` | `DemisterMountStyle` | `enum` | `Floating` | Sets how your Wisplight is carried. `Floating` keeps the base game follower orb, `HipOrb` shows a still orb on your hip, and `HipCage` shows a caged lantern on your hip. Both hip styles move the mist clearance center to your hip and use a brighter light to make up for the lower position. |
+| `9 - Worn Demister` | `DemisterMountStyle` | `enum` | `Floating` | Sets how your Wisplight is carried. `Floating` keeps the base game follower orb, `HipOrb` shows a still orb on your hip, and `HipCage` shows a caged lantern on your hip. Both hip styles move the mist clearance center to your hip and use a brighter light to make up for the lower position. Only the hip styles give heat, see `EnableDemisterHeat`. |
+| `9 - Worn Demister` | `ToggleDemisterLightHotkey` | `KeyboardShortcut` | `KeyCode.H` | Hotkey that turns the light of your equipped Wisplight off and on. Mist clearance continues while the light is off. The Wisplight item keeps the setting through unequip and relog. Other players see the light off only if they have this mod with `EnableDemisterCustomization` enabled. Requires `EnableDemisterCustomization`. |
+| `9 - Worn Demister` | `DemisterLightSwitchEffects` | `bool` | `true` | Plays a sound and a small particle effect when a Wisplight light is switched off or on. |
+| `9 - Worn Demister` | `EnableDemisterHeat` | `bool` | `true` | Server-synced. Lets a Wisplight worn on the hip give heat like a campfire, in a 3 m radius around the hip. Heat dries off Wet faster, removes Cold, gives Resting while sitting, and lets beds and eggs in range count as near a fire. Only `HipOrb` and `HipCage` give heat. The `Floating` ball gives no heat. Heat stops while the light is off. Players near the wearer get the heat only if they have this mod. |
+| `9 - Worn Demister` | `DemisterHeatBlockInColdBiomes` | `bool` | `true` | Server-synced. Stops Wisplight heat in the Mountains and Deep North. Heat continues there while the wearer is indoors, under shelter, or resistant to frost. |
 | `10 - Debug` | `EnableDebugLogs` | `bool` | `false` | Enables verbose diagnostic logging in the BepInEx console. |
 | `10 - Debug` | `ShowMistSuppressionRadius` | `bool` | `false` | Projects a ground boundary ring around wisp torches and lamps showing their active mist suppression radius. |
 
@@ -233,6 +239,7 @@ You can also find and message DreamWraith on these Valheim Discord servers:
 ### Gameplay
 
 - [**PersonalChestHeeler**](https://thunderstore.io/c/valheim/p/DreamWraith/PersonalChestHeeler/): Tiered personal locked storage chests with server-synced capacity and crafting recipes.
+- [**PlantBiomeHeeler**](https://thunderstore.io/c/valheim/p/DreamWraith/PlantBiomeHeeler/): Terrain overlay and HUD that show which biome a crop or sapling actually gets, with two-tone borders and optional hatch lines.
 
 ### HUD
 
