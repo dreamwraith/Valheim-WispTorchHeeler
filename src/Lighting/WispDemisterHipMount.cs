@@ -14,6 +14,7 @@ namespace WispTorchHeeler.Lighting
         private GameObject[] _ballVisuals = Array.Empty<GameObject>();
         private WispDemisterHipVisual? _hipVisual;
         private WornDemisterMount _activeMount = WornDemisterMount.Floating;
+        private bool _isLit = true;
 
         public void Initialize(GameObject ballRoot)
         {
@@ -21,6 +22,32 @@ namespace WispTorchHeeler.Lighting
         }
 
         public WispDemisterHipVisual? Visual => _hipVisual;
+
+        public bool IsLit => _isLit;
+
+        // only a lit hip copy counts, the floating ball gives no heat
+        public bool IsLitOnHip => _isLit && _hipVisual;
+
+        // true when the light state changed and the visuals need a color refresh
+        public bool SetLit(bool isLit)
+        {
+            if (isLit == _isLit)
+            {
+                return false;
+            }
+
+            _isLit = isLit;
+            if (_activeMount == WornDemisterMount.Floating)
+            {
+                SetBallVisualsActive(isLit);
+            }
+            else if (_hipVisual)
+            {
+                _hipVisual.SetLit(isLit);
+            }
+
+            return true;
+        }
 
         // true when the visuals changed, either a new copy went on or the ball came back because the template is missing
         public bool Attach(WornDemisterMount mount, Player wearer)
@@ -47,13 +74,11 @@ namespace WispTorchHeeler.Lighting
             visualTransform.SetParent(wearer.m_visEquipment.m_backTool);
             visualTransform.localPosition = Vector3.zero;
             visualTransform.localRotation = Quaternion.identity;
+            hipVisual.SetLit(_isLit);
 
             _hipVisual = hipVisual;
             _activeMount = mount;
-            foreach (GameObject ballVisual in _ballVisuals)
-            {
-                ballVisual.SetActive(false);
-            }
+            SetBallVisualsActive(false);
 
             Plugin.LogDebug($"[DemisterHipMount] Attached {mount} visual to '{wearer.GetPlayerName()}'.");
             return true;
@@ -68,14 +93,18 @@ namespace WispTorchHeeler.Lighting
                 return false;
             }
 
-            // base game Fireplace hides and relights its flames the same way, play on awake restarts the particles
             _activeMount = WornDemisterMount.Floating;
+            SetBallVisualsActive(_isLit);
+            return true;
+        }
+
+        // base game Fireplace hides and relights its flames the same way, play on awake restarts the particles
+        private void SetBallVisualsActive(bool isActive)
+        {
             foreach (GameObject ballVisual in _ballVisuals)
             {
-                ballVisual.SetActive(true);
+                ballVisual.SetActive(isActive);
             }
-
-            return true;
         }
 
         // the copy lives under the wearer joint, not the ball, so it outlives the ball unless removed here

@@ -254,13 +254,13 @@ namespace WispTorchHeeler.Lighting
 
         public static void Initialize()
         {
-            ModConfig.EnableMod.SettingChanged += (sender, args) => RefreshAll();
-            ModConfig.DefaultLightColor.SettingChanged += (sender, args) => RefreshAll();
-            ModConfig.ServerDefaultLightColor.SettingChanged += (sender, args) => RefreshAll();
-            ModConfig.EnforceServerDefaultColor.SettingChanged += (sender, args) => RefreshAll();
-            ModConfig.AffectNativeMistTorches.SettingChanged += (sender, args) => RefreshAll();
-            ModConfig.EnableAlphaCustomization.SettingChanged += (sender, args) => RefreshAll();
-            ModConfig.ShowMistSuppressionRadius.SettingChanged += (sender, args) => RefreshAllMarkers();
+            ModConfig.EnableMod.SettingChanged += (sender, eventArgs) => RefreshAll();
+            ModConfig.DefaultLightColor.SettingChanged += (sender, eventArgs) => RefreshAll();
+            ModConfig.ServerDefaultLightColor.SettingChanged += (sender, eventArgs) => RefreshAll();
+            ModConfig.EnforceServerDefaultColor.SettingChanged += (sender, eventArgs) => RefreshAll();
+            ModConfig.AffectNativeMistTorches.SettingChanged += (sender, eventArgs) => RefreshAll();
+            ModConfig.EnableAlphaCustomization.SettingChanged += (sender, eventArgs) => RefreshAll();
+            ModConfig.ShowMistSuppressionRadius.SettingChanged += (sender, eventArgs) => RefreshAllMarkers();
         }
 
         public static void RefreshAll()

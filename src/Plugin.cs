@@ -52,10 +52,12 @@ namespace WispTorchHeeler
             ModLocalization.Initialize();
             ModConfig.RegisterInputButtons();
             gameObject.AddComponent<TorchPainterInput>();
+            gameObject.AddComponent<WispDemisterLightInput>();
 
             WispTorchColorController.Initialize();
             WispDemisterColorController.Initialize();
             WispDemisterHipTemplates.Initialize();
+            WispDemisterLightSwitchEffects.Initialize();
             WispDemisterIdleMotion.Initialize();
 
             _harmony = Harmony.CreateAndPatchAll(Assembly.GetExecutingAssembly(), ModGUID);

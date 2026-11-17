@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 namespace WispTorchHeeler.Lighting
@@ -7,12 +8,24 @@ namespace WispTorchHeeler.Lighting
     public class WispDemisterHipVisual : MonoBehaviour
     {
         [SerializeField] private Transform _anchor = null!;
+        [SerializeField] private GameObject[] _lightParts = Array.Empty<GameObject>();
 
         public WispVisualApplicator Applicator { get; } = new();
 
         public Transform Anchor => _anchor;
 
         public void SetAnchor(Transform anchor) => _anchor = anchor;
+
+        public void SetLightParts(GameObject[] lightParts) => _lightParts = lightParts;
+
+        // LightLod turns its light back on by itself, so whole objects get switched. the anchor keeps moving while inactive
+        public void SetLit(bool isLit)
+        {
+            foreach (GameObject lightPart in _lightParts)
+            {
+                lightPart.SetActive(isLit);
+            }
+        }
 
         private void Awake()
         {

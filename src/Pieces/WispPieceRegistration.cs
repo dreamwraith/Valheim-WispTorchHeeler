@@ -243,41 +243,41 @@ namespace WispTorchHeeler.Pieces
         private static void EnsurePlayerBase(GameObject targetGameObject)
         {
             Transform playerBaseTransform = targetGameObject.transform.Find("PlayerBase");
-            GameObject playerBaseGo;
+            GameObject playerBaseObject;
             if (playerBaseTransform)
             {
-                playerBaseGo = playerBaseTransform.gameObject;
+                playerBaseObject = playerBaseTransform.gameObject;
             }
             else
             {
-                playerBaseGo = new GameObject("PlayerBase");
-                playerBaseGo.transform.SetParent(targetGameObject.transform, false);
-                playerBaseGo.transform.localPosition = Vector3.zero;
-                playerBaseGo.transform.localRotation = Quaternion.identity;
+                playerBaseObject = new GameObject("PlayerBase");
+                playerBaseObject.transform.SetParent(targetGameObject.transform, false);
+                playerBaseObject.transform.localPosition = Vector3.zero;
+                playerBaseObject.transform.localRotation = Quaternion.identity;
             }
 
             int triggerLayer = LayerMask.NameToLayer("character_trigger");
             if (triggerLayer >= 0)
             {
-                playerBaseGo.layer = triggerLayer;
+                playerBaseObject.layer = triggerLayer;
             }
 
-            SphereCollider sphereCollider = playerBaseGo.GetComponent<SphereCollider>();
+            SphereCollider sphereCollider = playerBaseObject.GetComponent<SphereCollider>();
             if (!sphereCollider)
             {
-                sphereCollider = playerBaseGo.AddComponent<SphereCollider>();
+                sphereCollider = playerBaseObject.AddComponent<SphereCollider>();
             }
             sphereCollider.isTrigger = true;
             sphereCollider.center = Vector3.zero;
 
-            EffectArea effectArea = playerBaseGo.GetComponent<EffectArea>();
+            EffectArea effectArea = playerBaseObject.GetComponent<EffectArea>();
             if (!effectArea)
             {
-                effectArea = playerBaseGo.AddComponent<EffectArea>();
+                effectArea = playerBaseObject.AddComponent<EffectArea>();
             }
             effectArea.m_type = EffectArea.Type.PlayerBase;
 
-            Plugin.LogDebug($"[PieceManager] Configured PlayerBase on '{targetGameObject.name}' (layer: {playerBaseGo.layer}).");
+            Plugin.LogDebug($"[PieceManager] Configured PlayerBase on '{targetGameObject.name}' (layer: {playerBaseObject.layer}).");
         }
     }
 }

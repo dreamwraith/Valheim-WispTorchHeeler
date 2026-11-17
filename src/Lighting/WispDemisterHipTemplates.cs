@@ -17,11 +17,13 @@ namespace WispTorchHeeler.Lighting
         private const string LanternItemPrefab = "Lantern";
         private const string HolsterVisualChild = "attach_back";
         private const string LanternModelChild = "default";
+        private const string LanternLightChild = "Point Light";
+        private const string LanternFlareChild = "flare";
         private const string CageMaterialName = "HipWispLantern_mat";
         private const string CageAlbedoResource = "HipWispLantern_d.png";
         private const string CageEmissionResource = "HipWispLantern_e.png";
 
-        private static readonly int s_mainTexId = Shader.PropertyToID("_MainTex");
+        private static readonly int s_mainTextureId = Shader.PropertyToID("_MainTex");
         private static readonly int s_emissionMapId = Shader.PropertyToID("_EmissionMap");
 
         // meters along the m_backTool joint axes, Attach puts the template root on the joint at world scale 1
@@ -77,9 +79,12 @@ namespace WispTorchHeeler.Lighting
 
             Transform orbModel = orbTemplate.transform.Find(OrbModelChild);
             orbModel.localPosition = s_orbOffset;
-            orbTemplate.transform.Find(OrbEffectsChild).localPosition = s_orbOffset;
+            Transform orbEffects = orbTemplate.transform.Find(OrbEffectsChild);
+            orbEffects.localPosition = s_orbOffset;
 
-            WispDemisterHipVisual orbVisual = FinishTemplate(orbTemplate, orbModel);
+            // the orb is the light, so the whole thing goes when it is off
+            GameObject[] orbLightParts = { orbModel.gameObject, orbEffects.gameObject };
+            WispDemisterHipVisual orbVisual = FinishTemplate(orbTemplate, orbModel, orbLightParts);
             Plugin.LogDebug($"[HipTemplates] Created hip orb template '{OrbTemplateName}'.");
             return orbVisual;
         }
@@ -109,7 +114,9 @@ namespace WispTorchHeeler.Lighting
             lanternModel.localRotation = s_cageRotation;
             lanternModel.localScale = Vector3.one * CageScale;
 
-            WispDemisterHipVisual cageVisual = FinishTemplate(cageTemplate, lanternModel);
+            // the cage stays on the hip when off, only its light and flare go. the glow gets darkened by the color refresh
+            GameObject[] cageLightParts = { lanternModel.Find(LanternLightChild).gameObject, lanternModel.Find(LanternFlareChild).gameObject };
+            WispDemisterHipVisual cageVisual = FinishTemplate(cageTemplate, lanternModel, cageLightParts);
             Plugin.LogDebug($"[HipTemplates] Created hip cage template '{CageTemplateName}'.");
             return cageVisual;
         }
@@ -118,7 +125,7 @@ namespace WispTorchHeeler.Lighting
         private static Material CreateCageMaterial(Material donorMaterial)
         {
             Material cageMaterial = new Material(donorMaterial) { name = CageMaterialName };
-            cageMaterial.SetTexture(s_mainTexId, LoadEmbeddedTexture(CageAlbedoResource, donorMaterial.GetTexture(s_mainTexId)));
+            cageMaterial.SetTexture(s_mainTextureId, LoadEmbeddedTexture(CageAlbedoResource, donorMaterial.GetTexture(s_mainTextureId)));
             cageMaterial.SetTexture(s_emissionMapId, LoadEmbeddedTexture(CageEmissionResource, donorMaterial.GetTexture(s_emissionMapId)));
             return cageMaterial;
         }
@@ -138,7 +145,7 @@ namespace WispTorchHeeler.Lighting
             return texture;
         }
 
-        private static WispDemisterHipVisual FinishTemplate(GameObject template, Transform anchor)
+        private static WispDemisterHipVisual FinishTemplate(GameObject template, Transform anchor, GameObject[] lightParts)
         {
             // copies stay silent, the hidden ball already plays its sounds from the hip
             DestroyComponents<AudioSource>(template);
@@ -151,6 +158,7 @@ namespace WispTorchHeeler.Lighting
 
             WispDemisterHipVisual hipVisual = template.AddComponent<WispDemisterHipVisual>();
             hipVisual.SetAnchor(anchor);
+            hipVisual.SetLightParts(lightParts);
             return hipVisual;
         }
 

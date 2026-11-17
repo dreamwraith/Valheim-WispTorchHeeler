@@ -47,10 +47,6 @@ namespace WispTorchHeeler.Lighting
         private Color[] _originalTintColors = Array.Empty<Color>();
         private bool[] _isEmissionOnlyRenderer = Array.Empty<bool>();
 
-        public int LightCount => _lights.Length;
-        public int ParticleSystemCount => _particleSystems.Length;
-        public int TargetRendererCount => _targetRenderers.Length;
-
         public void Initialize(GameObject rootGameObject)
         {
             if (!rootGameObject)
@@ -217,6 +213,19 @@ namespace WispTorchHeeler.Lighting
             }
         }
 
+        // for a light that is off but still on show, like the hip cage. ApplyColor and RestoreOriginalColors both put the glow back
+        public void DarkenEmission()
+        {
+            foreach (Renderer targetRenderer in _targetRenderers)
+            {
+                Material runtimeMaterial = targetRenderer.material;
+                if (runtimeMaterial.HasProperty(s_emissionColor))
+                {
+                    runtimeMaterial.SetColor(s_emissionColor, Color.black);
+                }
+            }
+        }
+
         // renderer.material copies dont get freed with their renderer
         public void CleanupRuntimeMaterials()
         {
@@ -262,7 +271,7 @@ namespace WispTorchHeeler.Lighting
                 return;
             }
 
-            float baseIntensity = Mathf.Max(originalColor.r, Mathf.Max(originalColor.g, originalColor.b));
+            float baseIntensity = originalColor.maxColorComponent;
             float finalIntensity = baseIntensity * emissionMultiplier;
             material.SetColor(propertyId, new Color(
                 targetColor.r * finalIntensity,
@@ -278,7 +287,7 @@ namespace WispTorchHeeler.Lighting
                 return;
             }
 
-            float intensity = Mathf.Max(originalColor.r, Mathf.Max(originalColor.g, originalColor.b));
+            float intensity = originalColor.maxColorComponent;
             material.SetColor(propertyId, new Color(
                 targetColor.r * intensity,
                 targetColor.g * intensity,

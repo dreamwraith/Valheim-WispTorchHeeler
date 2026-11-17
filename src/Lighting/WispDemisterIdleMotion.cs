@@ -13,10 +13,10 @@ namespace WispTorchHeeler.Lighting
 
         public static void Initialize()
         {
-            ModConfig.EnableMod.SettingChanged += (sender, args) => ApplyToLocalPlayer();
-            ModConfig.EnableDemisterCustomization.SettingChanged += (sender, args) => ApplyToLocalPlayer();
-            ModConfig.DemisterIdleSpeedMultiplier.SettingChanged += (sender, args) => ApplyToLocalPlayer();
-            ModConfig.DemisterIdleRadiusMultiplier.SettingChanged += (sender, args) => ApplyToLocalPlayer();
+            ModConfig.EnableMod.SettingChanged += (sender, eventArgs) => ApplyToLocalPlayer();
+            ModConfig.EnableDemisterCustomization.SettingChanged += (sender, eventArgs) => ApplyToLocalPlayer();
+            ModConfig.DemisterIdleSpeedMultiplier.SettingChanged += (sender, eventArgs) => ApplyToLocalPlayer();
+            ModConfig.DemisterIdleRadiusMultiplier.SettingChanged += (sender, eventArgs) => ApplyToLocalPlayer();
         }
 
         public static void OnSetup(SE_Demister demisterEffect)

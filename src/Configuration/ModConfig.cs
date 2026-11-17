@@ -77,6 +77,11 @@ namespace WispTorchHeeler.Configuration
         public static ConfigEntry<float> DemisterIdleSpeedMultiplier = null!;
         public static ConfigEntry<float> DemisterIdleRadiusMultiplier = null!;
         public static ConfigEntry<WornDemisterMount> DemisterMountStyle = null!;
+        public static ConfigEntry<KeyboardShortcut> ToggleDemisterLightHotkey = null!;
+        public static Jotunn.Configs.ButtonConfig? ButtonToggleDemisterLightConfig;
+        public static ConfigEntry<bool> DemisterLightSwitchEffects = null!;
+        public static ConfigEntry<bool> EnableDemisterHeat = null!;
+        public static ConfigEntry<bool> DemisterHeatBlockInColdBiomes = null!;
 
         // 10 - Debug
         public static ConfigEntry<bool> EnableDebugLogs = null!;
@@ -271,8 +276,20 @@ namespace WispTorchHeeler.Configuration
                 new AcceptableValueRange<float>(0.0f, 2.0f));
 
             DemisterMountStyle = BindClient(config, "9 - Worn Demister", "DemisterMountStyle", WornDemisterMount.Floating,
-                "Sets how your body-worn Demister is carried. Floating keeps the base game follower orb. HipOrb shows a still orb on your hip. HipCage shows a caged lantern on your hip. Both hip styles move the mist clearance center to your hip and use a brighter light to make up for the lower position. Other players see the selected style only if they have this mod with EnableDemisterCustomization enabled. All other players see the base game orb at your hip.");
+                "Sets how your body-worn Demister is carried. Floating keeps the base game follower orb. HipOrb shows a still orb on your hip. HipCage shows a caged lantern on your hip. Both hip styles move the mist clearance center to your hip and use a brighter light to make up for the lower position. Only the hip styles give heat, see EnableDemisterHeat. Other players see the selected style only if they have this mod with EnableDemisterCustomization enabled. All other players see the base game orb at your hip.");
             ConfigSync.AddConfigEntry(DemisterMountStyle, false);
+
+            ToggleDemisterLightHotkey = BindClient(config, "9 - Worn Demister", "ToggleDemisterLightHotkey", new KeyboardShortcut(KeyCode.H),
+                "Hotkey that turns the light of your equipped Wisplight off and on. Mist clearance continues while the light is off. The Wisplight item keeps the setting through unequip and relog. Other players see the light off only if they have this mod with EnableDemisterCustomization enabled. Requires EnableDemisterCustomization.");
+
+            DemisterLightSwitchEffects = BindClient(config, "9 - Worn Demister", "DemisterLightSwitchEffects", true,
+                "Plays a sound and a small particle effect when a Wisplight light is switched off or on.");
+
+            EnableDemisterHeat = BindSynced(config, "9 - Worn Demister", "EnableDemisterHeat", true,
+                "Lets a Wisplight worn on the hip give heat like a campfire, in a 3 m radius around the hip. Heat dries off Wet faster, removes Cold, gives Resting while sitting, and lets beds and eggs in range count as near a fire. Only the HipOrb and HipCage styles of DemisterMountStyle give heat. The Floating ball gives no heat. Heat stops while the light is off. Players near the wearer get the heat only if they have this mod.");
+
+            DemisterHeatBlockInColdBiomes = BindSynced(config, "9 - Worn Demister", "DemisterHeatBlockInColdBiomes", true,
+                "Stops Wisplight heat in the Mountains and Deep North. Heat continues there while the wearer is indoors, under shelter, or resistant to frost.");
 
             EnableDebugLogs = BindClient(config, "10 - Debug", "EnableDebugLogs", false,
                 "Enables verbose diagnostic logging in the BepInEx console.");
@@ -285,6 +302,7 @@ namespace WispTorchHeeler.Configuration
 
         public const string ButtonPaint = "WTH_Paint";
         public const string ButtonReset = "WTH_Reset";
+        public const string ButtonToggleDemisterLight = "WTH_ToggleDemisterLight";
 
         public static void RegisterInputButtons()
         {
@@ -308,7 +326,15 @@ namespace WispTorchHeeler.Configuration
                 };
                 Jotunn.Managers.InputManager.Instance.AddButton(Plugin.ModGUID, ButtonResetConfig);
 
-                Plugin.LogDebug("[ModConfig] Registered input buttons 'WTH_Paint' and 'WTH_Reset' via Jotunn InputManager.");
+                ButtonToggleDemisterLightConfig = new Jotunn.Configs.ButtonConfig
+                {
+                    Name = ButtonToggleDemisterLight,
+                    ShortcutConfig = ToggleDemisterLightHotkey,
+                    ActiveInGUI = false
+                };
+                Jotunn.Managers.InputManager.Instance.AddButton(Plugin.ModGUID, ButtonToggleDemisterLightConfig);
+
+                Plugin.LogDebug($"[ModConfig] Registered input buttons '{ButtonPaint}', '{ButtonReset}' and '{ButtonToggleDemisterLight}' via Jotunn InputManager.");
             }
             catch (Exception exception)
             {
